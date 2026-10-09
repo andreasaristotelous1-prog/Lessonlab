@@ -652,6 +652,25 @@
 
     @media (max-width: 860px) { #signout { font-size: 0; padding: 0 9px; } #signout::before { content: '⎋'; font-size: 1rem; } }
 
+    /* no class yet */
+    #no-class {
+      flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    #no-class[hidden] { display: none; }
+    #no-class .nc-card {
+      width: min(440px, 100%); text-align: center; background: #fff; border: 1px solid #e4def5; border-radius: 22px;
+      padding: 30px 28px 26px; box-shadow: 0 14px 40px rgba(95,70,180,.12); color: #2a2347;
+    }
+    #no-class h2 { margin: 0 0 6px; font-size: 1.4rem; }
+    #no-class p { margin: 0 0 20px; color: #7a7396; line-height: 1.4; }
+    #no-class .nc-btn {
+      display: block; width: 100%; padding: 13px 14px; margin: 10px 0 0; border-radius: 14px; font: inherit; font-weight: 700; font-size: 1.02rem; cursor: pointer;
+    }
+    #nc-create { background: #7d68d0; color: #fff; border: 0; }
+    #nc-create:hover { background: #6d58c2; }
+    #nc-join { background: #f1ecfd; color: #4b3a8f; border: 1.5px solid #dcd2f7; }
+    #nc-join:hover { background: #e9e1fb; }
+
     /* co-teachers */
     .co-section { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #ece8f7; }
     .co-section:first-of-type { border-top: 0; margin-top: 4px; padding-top: 0; }
@@ -778,6 +797,15 @@
   <div id="sound-alert-banner">
     <span>⚠️ Your browser is blocking alert sounds until you interact with the page. Click "Test &amp; enable" to turn them on.</span>
     <button onclick="unlockAndTestAudio()">Test &amp; enable</button>
+  </div>
+
+  <div id="no-class" hidden>
+    <div class="nc-card">
+      <h2>Welcome to Lessonlab</h2>
+      <p>You don't have a class open yet. Create your own, or join one a colleague has invited you to.</p>
+      <button type="button" class="nc-btn" id="nc-create">＋ Create a class</button>
+      <button type="button" class="nc-btn" id="nc-join">👥 Join a colleague's class</button>
+    </div>
   </div>
 
   <div class="workspace" id="workspace" data-view="pdf">
@@ -2667,7 +2695,19 @@
       }
     }
 
+    function showNoClass() {
+      document.getElementById('workspace').style.display = 'none';
+      document.getElementById('no-class').hidden = false;
+    }
+    function hideNoClass() {
+      document.getElementById('workspace').style.display = '';
+      document.getElementById('no-class').hidden = true;
+    }
+    document.getElementById('nc-create').addEventListener('click', () => document.getElementById('new-class').click());
+    document.getElementById('nc-join').addEventListener('click', () => document.getElementById('co-btn').click());
+
     async function openClass() {
+      hideNoClass();
       wiping = true;
       renderClassPicker();
       try { await ensureMeta(); } catch (e) { dbError(e); }
@@ -2813,15 +2853,9 @@
       classCode = classes.some((c) => c.code === saved) ? saved : (classes[0] ? classes[0].code : null);
       if (classCode) { saveClasses(); await openClass(); return; }
 
-      // No classes yet: the first one has to be named before anything else
+      // No classes yet: show the welcome screen. Making or joining a class is up to the teacher.
       renderClassPicker();
-      let name = '';
-      for (;;) {
-        const res = await classDialog({ mode: 'first', name });
-        name = res.name;
-        try { await addClass(name); return; }
-        catch (e) { alert('Could not create the class: ' + e.message); }
-      }
+      showNoClass();
     }
 
     // Midnight clear while the page is open (checked every 30s so a sleeping laptop still catches up)
