@@ -650,6 +650,40 @@
     .brand .w-c { color: #7d68d0; }
     .brand .w-f { color: #a68ce6; }
 
+    @media (max-width: 860px) { #signout { font-size: 0; padding: 0 9px; } #signout::before { content: '⎋'; font-size: 1rem; } }
+
+    /* sign-in screen */
+    #login {
+      position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem;
+      background: radial-gradient(900px 500px at 15% 0%, #e6dcff 0, transparent 60%), radial-gradient(800px 500px at 100% 100%, #d9ecff 0, transparent 55%), #f4f1fb;
+    }
+    #login[hidden] { display: none; }
+    #login .login-card {
+      background: #fff; border: 1px solid #e4def5; border-radius: 24px; padding: 34px 30px 28px; width: min(380px, 100%);
+      box-shadow: 0 18px 50px rgba(95,70,180,.14); text-align: center; color: #2a2347;
+    }
+    #login .logo { width: 60px; height: 60px; margin: 0 auto 10px; filter: none; animation: none; }
+    #login h1 { margin: 0; font-size: 1.9rem; font-weight: 700; letter-spacing: -.02em; }
+    #login h1 .a { color: #7d68d0; } #login h1 .b { color: #a68ce6; }
+    #login p { margin: 6px 0 22px; color: #7a7396; }
+    #login-form { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+    #login-form label { font-size: .82rem; font-weight: 600; color: #6b6385; margin: 6px 0 0 2px; }
+    #login-form input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #ddd8ee; border-radius: 12px; background: #faf9fd; color: #2a2347;
+      font: inherit; font-size: 1rem; outline: none;
+    }
+    #login-form input:focus { border-color: #b9a6f0; box-shadow: 0 0 0 3px rgba(185,166,240,.25); background: #fff; }
+    #l-submit {
+      margin-top: 12px; padding: 12px 14px; border: 0; border-radius: 12px; background: #7d68d0; color: #fff; font: inherit; font-weight: 700; font-size: 1.02rem; cursor: pointer;
+    }
+    #l-submit:hover { background: #6d58c2; }
+    #l-submit:disabled { opacity: .6; cursor: default; }
+    .login-links { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; }
+    .login-links button { background: none; border: 0; padding: 4px 2px; font: inherit; font-size: .8rem; white-space: nowrap; color: #7d68d0; cursor: pointer; }
+    .login-links button:hover { text-decoration: underline; }
+    #login-error { min-height: 1.4em; margin-top: 10px; color: #b3414f; font-size: .9rem; font-weight: 600; }
+    #login .note { margin: 14px 0 0; font-size: .8rem; color: #a39cc0; }
+
     /* page number box */
     #page-input {
       background: #fff; color: var(--text); border: 1px solid #ddd8ee; border-radius: 8px;
@@ -659,6 +693,32 @@
   </style>
 </head>
 <body>
+
+  <div id="login">
+    <div class="login-card">
+      <div class="logo">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">
+          <rect x="4" y="4" width="56" height="56" rx="10" fill="#c9b8f6" stroke="#7d68d0" stroke-width="4"/>
+          <g fill="none" stroke="#1f1b3a" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 16 V44 H31"/><path d="M42 16 V39 Q42 44 47 44"/></g>
+        </svg>
+      </div>
+      <h1><span class="a">Lesson</span><span class="b">lab</span></h1>
+      <p id="login-sub">Teacher sign-in</p>
+      <form id="login-form" novalidate>
+        <label for="l-email">School email</label>
+        <input id="l-email" type="email" autocomplete="username" placeholder="name@yourschool.org" required>
+        <label for="l-pass">Password</label>
+        <input id="l-pass" type="password" autocomplete="current-password" placeholder="Password" required>
+        <button id="l-submit" type="submit">Sign in</button>
+      </form>
+      <div id="login-error" role="alert"></div>
+      <div class="login-links">
+        <button type="button" id="l-toggle">New here? Create an account</button>
+        <button type="button" id="l-forgot">Forgot password?</button>
+      </div>
+      <p class="note">Your classes are saved to your account, so they follow you to any computer.</p>
+    </div>
+  </div>
 
   <div class="top-bar">
     <div class="brand-wrap">
@@ -681,10 +741,11 @@
       <button class="code-pill" id="code-pill" title="This class's permanent join code. Click to copy.">
         <span class="code-lbl">CODE</span><span id="class-code">······</span>
       </button>
-      <button class="btn" id="share-btn" title="Copy the student link with this class's code filled in">🔗 <span class="long">Share</span></button>
+      <button class="btn" id="share-btn" title="Copy the student link with this class's code filled in">🔗 Share</button>
       <button class="btn icon-btn" id="edit-class" title="Rename, clear or delete this class" aria-label="Edit class">✎</button>
       <button class="btn" id="new-class" title="Create a new class">+ <span class="long">New class</span><span class="short">New</span></button>
       <button class="btn" onclick="exportNines()" title="Download every class's 9s as one CSV, grouped by class">📊 Download 9s</button>
+      <button class="btn" id="signout" title="Sign out">Sign out</button>
     </div>
   </div>
 
@@ -1527,6 +1588,7 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, onValue, update, set, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAa-5f4Tkiw840rV2B7WKTz7-1f-9YFJa0",
@@ -1541,6 +1603,8 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth(app);
+    let uid = null;   // the signed-in teacher
 
     /* =====================================================
        CLASSES
@@ -1559,31 +1623,50 @@
       return Array.from(a, (n) => CODE_ALPHABET[n % CODE_ALPHABET.length]).join('');
     }
 
-    const LS_CLASSES = 'cf_classes', LS_ACTIVE = 'cf_active_class';
     const lsGet = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
     const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+    const lsDel = (k) => { try { localStorage.removeItem(k); } catch (_) {} };
+    const KEY_ACTIVE = () => `cf_active_class_${uid}`;
+    const KEY_LIST = () => `cf_classes_${uid}`;
 
-    function loadClasses() {
-      const raw = lsGet(LS_CLASSES);
-      if (raw !== null) {
-        try {
-          const list = JSON.parse(raw);
-          if (Array.isArray(list)) {
-            return list
-              .filter((c) => c && CODE_RE.test(c.code) && typeof c.name === 'string' && c.name.trim())
-              .map((c) => ({ code: c.code, name: c.name.slice(0, 30) }));
-          }
-        } catch (_) {}
-        return [];
+    function cleanList(list) {
+      return Array.isArray(list)
+        ? list.filter((c) => c && CODE_RE.test(c.code) && typeof c.name === 'string' && c.name.trim()).map((c) => ({ code: c.code, name: c.name.slice(0, 30) }))
+        : [];
+    }
+    function parseList(raw) { try { return cleanList(JSON.parse(raw)); } catch (_) { return []; } }
+
+    let classes = [];   // [{ code, name }], this teacher's classes (kept in their account)
+    let classCode = null;          // the class that's live right now
+    // Saved on this device and in the teacher's account, so their classes follow them to any computer
+    const saveClasses = () => {
+      lsSet(KEY_LIST(), JSON.stringify(classes)); lsSet(KEY_ACTIVE(), classCode || '');
+      const o = {}; classes.forEach((c) => { o[c.code] = c.name; });
+      set(ref(db, `teachers/${uid}/classes`), classes.length ? o : null).catch(() => {});
+    };
+
+    async function loadAccountClasses() {
+      let list = null;
+      try {
+        const v = (await get(ref(db, `teachers/${uid}/classes`))).val();
+        list = v ? cleanList(Object.entries(v).map(([code, name]) => ({ code, name }))) : [];
+      } catch (e) { list = parseList(lsGet(KEY_LIST())); dbError(e); }   // offline: use this device's copy
+      if (!list.length) {
+        // One-time move of the old, login-free class list from this browser into the account
+        let old = parseList(lsGet('cf_classes'));
+        const legacyCode = lsGet('cf_class_code');
+        if (!old.length && legacyCode && CODE_RE.test(legacyCode)) old = [{ code: legacyCode, name: 'My class' }];
+        if (old.length) {
+          list = old;
+          const act = lsGet('cf_active_class');
+          if (act) lsSet(KEY_ACTIVE(), act);
+          ['cf_classes', 'cf_active_class', 'cf_class_code'].forEach(lsDel);
+        }
       }
-      // Coming from the earlier single-code version: keep that class and its code so nobody has to rejoin
-      const legacy = lsGet('cf_class_code');
-      return legacy && CODE_RE.test(legacy) ? [{ code: legacy, name: 'My class' }] : [];
+      classes = list;
+      saveClasses();
     }
 
-    let classes = loadClasses();   // [{ code, name }]
-    let classCode = null;          // the class that's live right now
-    const saveClasses = () => { lsSet(LS_CLASSES, JSON.stringify(classes)); lsSet(LS_ACTIVE, classCode || ''); };
     const currentClass = () => classes.find((c) => c.code === classCode) || null;
     const cp = (path) => ref(db, `classes/${classCode}/${path}`);
     const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
@@ -2484,9 +2567,11 @@
         await update(ref(db, `classes/${classCode}`), {
           students: null,
           session: null,
-          meta: { name: c.name, day: today, created: Date.now() }
+          meta: { name: c.name, day: today, created: Date.now(), owner: uid }
         });
       } else {
+        if (meta.owner && meta.owner !== uid) throw new Error('This class belongs to a different teacher account.');
+        if (!meta.owner) await update(cp('meta'), { owner: uid });   // classes made before sign-in become yours the first time you open them
         if (meta.day !== today) await clearClassData(today); // a new day starts clean
         if (meta.name !== c.name) await update(cp('meta'), { name: c.name });
       }
@@ -2652,7 +2737,7 @@
     }
 
     async function boot() {
-      const saved = lsGet(LS_ACTIVE);
+      const saved = lsGet(KEY_ACTIVE());
       classCode = classes.some((c) => c.code === saved) ? saved : (classes[0] ? classes[0].code : null);
       if (classCode) { saveClasses(); await openClass(); return; }
 
@@ -2733,7 +2818,91 @@
       }
     });
 
-    boot().catch(dbError);
+    /* =====================================================
+       TEACHER SIGN-IN (school email and password). Nothing loads until a teacher is signed in.
+       ===================================================== */
+    const loginEl = document.getElementById('login');
+    const loginForm = document.getElementById('login-form');
+    const emailEl = document.getElementById('l-email');
+    const passEl = document.getElementById('l-pass');
+    const submitBtn = document.getElementById('l-submit');
+    const toggleBtn = document.getElementById('l-toggle');
+    const forgotBtn = document.getElementById('l-forgot');
+    const loginErr = document.getElementById('login-error');
+    let started = false;
+    let creating = false;   // false = signing in, true = making a new account
+
+    function loginMessage(e) {
+      const m = {
+        'auth/operation-not-allowed': 'Email sign-in has not been switched on in Firebase yet.',
+        'auth/unauthorized-domain': 'This website address has not been added to Firebase "Authorized domains" yet.',
+        'auth/invalid-email': 'That email address does not look right.',
+        'auth/missing-password': 'Please enter your password.',
+        'auth/weak-password': 'Please choose a password of at least 6 characters.',
+        'auth/email-already-in-use': 'There is already an account with that email. Use "Sign in" instead.',
+        'auth/invalid-credential': 'Wrong email or password.',
+        'auth/wrong-password': 'Wrong email or password.',
+        'auth/user-not-found': 'Wrong email or password.',
+        'auth/too-many-requests': 'Too many tries. Please wait a few minutes and try again.',
+        'auth/network-request-failed': 'Could not reach the sign-in service. Check your internet connection.'
+      };
+      const code = (e && e.code) || '';
+      return code in m ? m[code] : 'Could not sign in: ' + (e && e.message ? e.message : e);
+    }
+
+    function setMode(create) {
+      creating = create;
+      loginErr.textContent = '';
+      document.getElementById('login-sub').textContent = create ? 'Create your teacher account' : 'Teacher sign-in';
+      submitBtn.textContent = create ? 'Create account' : 'Sign in';
+      toggleBtn.textContent = create ? 'Already have an account? Sign in' : 'New here? Create an account';
+      passEl.autocomplete = create ? 'new-password' : 'current-password';
+      passEl.placeholder = create ? 'Choose a password (6+ characters)' : 'Password';
+      forgotBtn.style.display = create ? 'none' : '';
+    }
+    toggleBtn.addEventListener('click', () => setMode(!creating));
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = emailEl.value.trim(), pass = passEl.value;
+      loginErr.style.color = '';
+      if (!email) { loginErr.textContent = 'Please enter your school email.'; emailEl.focus(); return; }
+      if (!pass) { loginErr.textContent = 'Please enter your password.'; passEl.focus(); return; }
+      loginErr.textContent = '';
+      submitBtn.disabled = true;
+      try {
+        if (creating) await createUserWithEmailAndPassword(auth, email, pass);
+        else await signInWithEmailAndPassword(auth, email, pass);
+      } catch (err) { loginErr.textContent = loginMessage(err); }
+      submitBtn.disabled = false;
+    });
+
+    forgotBtn.addEventListener('click', async () => {
+      const email = emailEl.value.trim();
+      if (!email) { loginErr.textContent = 'Type your school email above first, then press "Forgot password?".'; emailEl.focus(); return; }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        loginErr.style.color = '#2c7a5a';
+        loginErr.textContent = 'If that email has an account, a reset link is on its way. Check your junk folder too.';
+      } catch (err) { loginErr.style.color = ''; loginErr.textContent = loginMessage(err); }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        if (started) { location.reload(); return; }
+        loginEl.hidden = false;
+        return;
+      }
+      loginEl.hidden = true;
+      if (started) return;
+      started = true;
+      uid = user.uid;
+      document.getElementById('signout').title = 'Sign out ' + (user.email || user.displayName || '');
+      await loadAccountClasses();
+      boot().catch(dbError);
+    });
+
+    document.getElementById('signout').addEventListener('click', () => { signOut(auth).catch(() => {}).finally(() => location.reload()); });
   </script>
 </body>
 </html>
