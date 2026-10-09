@@ -1,0 +1,46 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "classes": {
+      // No rule here on purpose: nobody can list "classes", so codes can't be harvested.
+      // You can only reach a class if you already know its 6-character code.
+      "$code": {
+        ".read": "$code.matches(/^[A-HJ-NP-Z2-9]{6}$/)",
+        ".write": "$code.matches(/^[A-HJ-NP-Z2-9]{6}$/)",
+
+        "meta": {
+          "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40" },
+          "day": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "created": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+
+        "session": {
+          "currentPage": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5000" },
+          "fileName": { ".validate": "newData.isString() && newData.val().length <= 100" },
+          "timer": {
+            "state": { ".validate": "newData.isString() && newData.val().length <= 8" },
+            "endsAt": { ".validate": "newData.isNumber()" },
+            "remaining": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "duration": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 14400000" },
+            "$other": { ".validate": false }
+          },
+          "soloWork": { ".validate": "newData.isBoolean()" },
+          "activePdfData": { ".validate": "newData.isString() && newData.val().length < 14000000" },
+          "$other": { ".validate": false }
+        },
+
+        "students": {
+          "$studentId": {
+            "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40" },
+            "emoji": { ".validate": "newData.isString() && newData.val().length <= 8" },
+            "stars": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999" },
+            "status": { ".validate": "newData.isString() && newData.val().length <= 12" }
+          }
+        }
+      }
+    }
+  }
+}
