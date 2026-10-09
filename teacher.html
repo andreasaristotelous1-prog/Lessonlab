@@ -2862,7 +2862,7 @@
     // Share: the student page address with this class's code already filled in
     document.getElementById('share-btn').addEventListener('click', () => {
       if (!classCode) return;
-      const url = new URL('student.html', location.href);
+      const url = new URL(/^https?:$/.test(location.protocol) ? 'student' : 'student.html', location.href);
       url.search = ''; url.hash = '';
       url.searchParams.set('code', classCode);
       const btn = document.getElementById('share-btn');
@@ -2950,7 +2950,7 @@
 
     document.getElementById('co-copy').addEventListener('click', () => {
       if (!coKey || !classCode) return;
-      const page = new URL('teacher.html', location.href); page.search = ''; page.hash = '';
+      const page = new URL(/^https?:$/.test(location.protocol) ? 'teacher' : 'teacher.html', location.href); page.search = ''; page.hash = '';
       const text = `Join my class "${currentClass().name}" on Lessonlab as a co-teacher.\n1. Sign in at ${page}\n2. Click the 👥 button, then "Join someone else's class"\n3. Class code: ${classCode}\n4. Invite code: ${coKey}`;
       copyText(text, () => coSay('Invite copied. Paste it into an email or message.', true));
     });

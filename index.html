@@ -35,14 +35,15 @@ h1 .a{color:#7d68d0}h1 .b{color:#a68ce6}
   <h1><span class="a">Lesson</span><span class="b">lab</span></h1>
   <p class="sub">Choose how you're joining</p>
 
-  <a class="opt stu" href="student.html">
+  <a class="opt stu" href="student">
     <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.2V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.8"/><path d="M22 9v6"/></svg></span>
     <span class="t"><strong>Student</strong><span>Join with your class code</span></span>
   </a>
-  <a class="opt tea" href="teacher.html">
+  <a class="opt tea" href="teacher">
     <span class="ico" style="color:#7d68d0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/><path d="M7 12l3-3 2.5 2L17 8"/></svg></span>
     <span class="t"><strong>Teacher</strong><span>Run your class and booklet</span></span>
   </a>
   <div class="foot">Lessonlab</div>
 </main>
+<script>if(location.protocol==='file:')document.querySelectorAll('a.opt').forEach(function(a){a.setAttribute('href',a.getAttribute('href')+'.html')});</script>
 </body></html>
