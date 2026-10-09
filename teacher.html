@@ -652,13 +652,37 @@
 
     @media (max-width: 860px) { #signout { font-size: 0; padding: 0 9px; } #signout::before { content: '⎋'; font-size: 1rem; } }
 
+    /* co-teachers */
+    .co-section { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #ece8f7; }
+    .co-section:first-of-type { border-top: 0; margin-top: 4px; padding-top: 0; }
+    .co-section h4 { margin: 0 0 4px; font-size: 1rem; }
+    .co-note { margin: 0 0 8px; font-size: .86rem; color: #7a7396; line-height: 1.35; }
+    .co-code {
+      display: flex; align-items: center; justify-content: center; font-family: 'Outfit', sans-serif; font-weight: 700; letter-spacing: .22em;
+      font-size: 1.5rem; padding: 10px 12px; margin: 6px 0; background: #f1ecfd; color: #4b3a8f; border: 1.5px dashed #c9b8f6; border-radius: 12px;
+    }
+    .co-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .co-row .btn { flex: 1 1 auto; justify-content: center; }
+    .co-inputs { display: flex; gap: 8px; margin: 6px 0; }
+    .co-inputs input {
+      flex: 1; min-width: 0; padding: 10px 12px; border: 1.5px solid #ddd8ee; border-radius: 10px; background: #faf9fd; color: #2a2347;
+      font: inherit; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; text-align: center; outline: none;
+    }
+    .co-inputs input:focus { border-color: #b9a6f0; box-shadow: 0 0 0 3px rgba(185,166,240,.25); background: #fff; }
+    #co-msg { min-height: 1.3em; margin-top: 8px; font-size: .88rem; font-weight: 600; color: #b3414f; }
+    #co-msg.ok { color: #2c7a5a; }
+
     /* sign-in screen */
     #login {
       position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem;
       background: radial-gradient(900px 500px at 15% 0%, #e6dcff 0, transparent 60%), radial-gradient(800px 500px at 100% 100%, #d9ecff 0, transparent 55%), #f4f1fb;
     }
     #login[hidden] { display: none; }
+    .back-link { align-self: flex-start; width: max-content; margin: 0 0 12px; display: flex; align-items: center; gap: 4px; padding: 5px 10px 5px 8px; border-radius: 999px; font-size: .86rem; font-weight: 600; text-decoration: none; color: #7d68d0; background: #f1ecfd; }
+    .back-link:hover { background: #e6dcfb; }
+    .back-link:focus-visible { outline: 3px solid #b9a6f0; outline-offset: 2px; }
     #login .login-card {
+      position: relative;
       background: #fff; border: 1px solid #e4def5; border-radius: 24px; padding: 34px 30px 28px; width: min(380px, 100%);
       box-shadow: 0 18px 50px rgba(95,70,180,.14); text-align: center; color: #2a2347;
     }
@@ -696,6 +720,7 @@
 
   <div id="login">
     <div class="login-card">
+      <a class="back-link" href="index.html" aria-label="Back to the start page">← Back</a>
       <div class="logo">
         <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">
           <rect x="4" y="4" width="56" height="56" rx="10" fill="#c9b8f6" stroke="#7d68d0" stroke-width="4"/>
@@ -742,6 +767,7 @@
         <span class="code-lbl">CODE</span><span id="class-code">······</span>
       </button>
       <button class="btn" id="share-btn" title="Copy the student link with this class's code filled in">🔗 Share</button>
+      <button class="btn icon-btn" id="co-btn" title="Co-teachers: invite another teacher to this class, or join one" aria-label="Co-teachers">👥</button>
       <button class="btn icon-btn" id="edit-class" title="Rename, clear or delete this class" aria-label="Edit class">✎</button>
       <button class="btn" id="new-class" title="Create a new class">+ <span class="long">New class</span><span class="short">New</span></button>
       <button class="btn" onclick="exportNines()" title="Download every class's 9s as one CSV, grouped by class">📊 Download 9s</button>
@@ -861,6 +887,34 @@
         <button type="button" class="link-btn red" id="modal-delete">Delete class</button>
       </div>
     </form>
+  </div>
+
+  <div class="modal" id="co-modal" hidden>
+    <div class="modal-card">
+      <h3>Co-teachers</h3>
+      <div class="co-section" id="co-invite">
+        <h4 id="co-invite-title">Invite another teacher</h4>
+        <p class="co-note" id="co-invite-note"></p>
+        <div id="co-invite-body">
+          <div class="co-code" id="co-key">········</div>
+          <div class="co-row">
+            <button type="button" class="btn green" id="co-copy">Copy invite</button>
+            <button type="button" class="btn" id="co-reset" title="Makes a new invite code and removes every co-teacher">New code</button>
+          </div>
+        </div>
+      </div>
+      <div class="co-section">
+        <h4>Join someone else's class</h4>
+        <p class="co-note">Enter the class code and the invite code the class owner sent you.</p>
+        <div class="co-inputs">
+          <input id="co-join-code" maxlength="6" placeholder="CLASS" aria-label="Class code" autocomplete="off" spellcheck="false">
+          <input id="co-join-key" maxlength="8" placeholder="INVITE" aria-label="Invite code" autocomplete="off" spellcheck="false">
+        </div>
+        <button type="button" class="btn green" id="co-join" style="width:100%;justify-content:center">Join as co-teacher</button>
+      </div>
+      <div id="co-msg" role="status"></div>
+      <div class="modal-actions"><button type="button" class="btn" id="co-close">Close</button></div>
+    </div>
   </div>
 
   <script>
@@ -1617,8 +1671,8 @@
        ===================================================== */
     const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const CODE_RE = /^[A-HJ-NP-Z2-9]{6}$/;
-    function genCode() {
-      const a = new Uint32Array(6);
+    function genCode(len = 6) {
+      const a = new Uint32Array(len);
       crypto.getRandomValues(a);
       return Array.from(a, (n) => CODE_ALPHABET[n % CODE_ALPHABET.length]).join('');
     }
@@ -1637,6 +1691,7 @@
     function parseList(raw) { try { return cleanList(JSON.parse(raw)); } catch (_) { return []; } }
 
     let classes = [];   // [{ code, name }], this teacher's classes (kept in their account)
+    let isOwner = true;   // false when this is someone else's class you joined as a co-teacher
     let classCode = null;          // the class that's live right now
     // Saved on this device and in the teacher's account, so their classes follow them to any computer
     const saveClasses = () => {
@@ -2569,11 +2624,19 @@
           session: null,
           meta: { name: c.name, day: today, created: Date.now(), owner: uid }
         });
+        isOwner = true;
       } else {
-        if (meta.owner && meta.owner !== uid) throw new Error('This class belongs to a different teacher account.');
-        if (!meta.owner) await update(cp('meta'), { owner: uid });   // classes made before sign-in become yours the first time you open them
+        if (meta.owner && meta.owner !== uid) {
+          // Someone else's class: only allowed in if they invited you as a co-teacher (and haven't since reset the invite)
+          isOwner = false;
+          try { await update(cp('meta'), { day: meta.day || today }); }
+          catch (_) { throw new Error('You no longer have access to this class. Ask the owner for a new invite code.'); }
+        } else {
+          isOwner = true;
+          if (!meta.owner) await update(cp('meta'), { owner: uid });   // classes made before sign-in become yours the first time you open them
+        }
         if (meta.day !== today) await clearClassData(today); // a new day starts clean
-        if (meta.name !== c.name) await update(cp('meta'), { name: c.name });
+        if (isOwner && meta.name !== c.name) await update(cp('meta'), { name: c.name });
       }
       classDay = today;
     }
@@ -2641,7 +2704,7 @@
       c.name = name;
       saveClasses();
       renderClassPicker();
-      try { await update(cp('meta'), { name }); } catch (e) { dbError(e); }
+      if (isOwner) { try { await update(cp('meta'), { name }); } catch (e) { dbError(e); } }
     }
 
     // Clear today's students, 9s and booklet (new day, or the "Clear" option). The class stays.
@@ -2661,7 +2724,15 @@
       wiping = true;
       const doomed = classCode;
       detach();
-      try { await remove(ref(db, `classes/${doomed}`)); } catch (e) { dbError(e); }
+      try {
+        if (isOwner) {
+          await remove(ref(db, `classes/${doomed}`));
+          await remove(ref(db, `coteachers/${doomed}`)).catch(() => {});
+          await remove(ref(db, `classKeys/${doomed}`)).catch(() => {});
+        } else {
+          await remove(ref(db, `coteachers/${doomed}/${uid}`)).catch(() => {});   // just leave; the class carries on for the owner
+        }
+      } catch (e) { dbError(e); }
       classes = classes.filter((c) => c.code !== doomed);
       classCode = null;
       saveClasses();
@@ -2698,6 +2769,7 @@
         mOk.textContent = cfg.ok;
         mCancel.style.display = cfg.cancel ? '' : 'none';
         mDanger.style.display = cfg.danger ? '' : 'none';
+        mDelete.textContent = isOwner ? 'Delete class' : 'Remove from my list';
         mName.value = name;
         mError.textContent = '';
         modal.hidden = false;
@@ -2814,8 +2886,111 @@
       } else if (res.action === 'clear') {
         if (confirm(`Clear the students, 9s and booklet for ${c.name}?\n\nThe class and its code stay the same.`)) await resetLesson();
       } else if (res.action === 'delete') {
-        if (confirm(`Delete ${c.name}?\n\nThis removes the class, its code, its students, their 9s and the booklet. Anyone using the code will be disconnected.`)) await deleteClass();
+        if (!isOwner) {
+          if (confirm(`Remove ${c.name} from your classes?\n\nYou are a co-teacher, so the class itself stays for its owner. You can rejoin with a new invite.`)) await deleteClass();
+        } else if (confirm(`Delete ${c.name}?\n\nThis removes the class, its code, its students, their 9s and the booklet. Anyone using the code will be disconnected.`)) await deleteClass();
       }
+    });
+
+    /* =====================================================
+       CO-TEACHERS
+       The owner has a private invite code for each class (stored where students can't read it).
+       A teacher who enters the class code + invite code is let in as a co-teacher.
+       Making a new invite code switches the old one off and removes every co-teacher.
+       ===================================================== */
+    const coModal = document.getElementById('co-modal');
+    const coMsg = document.getElementById('co-msg');
+    const coKeyEl = document.getElementById('co-key');
+    let coKey = '';
+    const coSay = (t, ok) => { coMsg.textContent = t || ''; coMsg.classList.toggle('ok', !!ok); };
+
+    async function loadInvite(forceNew) {
+      coKey = '';
+      coKeyEl.textContent = '········';
+      if (!classCode || !isOwner) return;
+      const code = classCode;
+      try {
+        let key = forceNew ? null : (await get(ref(db, `classKeys/${code}`))).val();
+        if (!key) {
+          key = genCode(8);
+          await set(ref(db, `classKeys/${code}`), key);
+          await remove(ref(db, `coteachers/${code}`));   // anyone let in with an older code is out
+        }
+        if (code !== classCode) return;
+        coKey = key;
+        coKeyEl.textContent = key;
+      } catch (e) { coSay('Could not load the invite code: ' + e.message); }
+    }
+
+    function openCoModal() {
+      coSay('');
+      const c = currentClass();
+      const body = document.getElementById('co-invite-body');
+      const note = document.getElementById('co-invite-note');
+      document.getElementById('co-invite').style.display = c ? '' : 'none';
+      if (c) {
+        document.getElementById('co-invite-title').textContent = `Invite a teacher to ${c.name}`;
+        if (isOwner) {
+          note.textContent = 'Send them the invite below. They sign in with their own account, then use "Join someone else\'s class". Co-teachers can run the class, but only you can delete it.';
+          body.style.display = '';
+        } else {
+          note.textContent = 'You are a co-teacher on this class. Only its owner can invite other teachers.';
+          body.style.display = 'none';
+        }
+      }
+      document.getElementById('co-join-code').value = '';
+      document.getElementById('co-join-key').value = '';
+      coModal.hidden = false;
+      loadInvite(false);
+    }
+    const closeCoModal = () => { coModal.hidden = true; };
+    document.getElementById('co-btn').addEventListener('click', openCoModal);
+    document.getElementById('co-close').addEventListener('click', closeCoModal);
+    coModal.addEventListener('mousedown', (e) => { if (e.target === coModal) closeCoModal(); });
+
+    document.getElementById('co-copy').addEventListener('click', () => {
+      if (!coKey || !classCode) return;
+      const page = new URL('teacher.html', location.href); page.search = ''; page.hash = '';
+      const text = `Join my class "${currentClass().name}" on Lessonlab as a co-teacher.\n1. Sign in at ${page}\n2. Click the 👥 button, then "Join someone else's class"\n3. Class code: ${classCode}\n4. Invite code: ${coKey}`;
+      copyText(text, () => coSay('Invite copied. Paste it into an email or message.', true));
+    });
+    document.getElementById('co-reset').addEventListener('click', async () => {
+      if (!isOwner || !classCode) return;
+      if (!confirm('Make a new invite code?\n\nThe old code stops working and every current co-teacher loses access until you send them the new one.')) return;
+      await loadInvite(true);
+      coSay('New invite code made. Previous co-teachers have been removed.', true);
+    });
+
+    ['co-join-code', 'co-join-key'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      });
+    });
+
+    document.getElementById('co-join').addEventListener('click', async () => {
+      const code = document.getElementById('co-join-code').value.trim().toUpperCase();
+      const key = document.getElementById('co-join-key').value.trim().toUpperCase();
+      if (!CODE_RE.test(code)) return coSay('The class code is 6 letters and numbers.');
+      if (key.length < 6) return coSay('Please enter the invite code.');
+      if (classes.some((c) => c.code === code)) {
+        closeCoModal();
+        return switchClass(code);
+      }
+      coSay('Joining…', true);
+      let name = 'Shared class';
+      try {
+        const meta = (await get(ref(db, `classes/${code}/meta`))).val();
+        if (!meta) return coSay('No class was found with that code.');
+        if (meta.owner === uid) return coSay('You already own that class.');
+        name = String(meta.name || name).slice(0, 30);
+        await set(ref(db, `coteachers/${code}/${uid}`), key);   // the database only accepts this if the invite code is right
+      } catch (e) {
+        return coSay("That invite code isn't right, or the owner has made a new one.");
+      }
+      classes.push({ code, name });
+      saveClasses();
+      closeCoModal();
+      await switchClass(code);
     });
 
     /* =====================================================
