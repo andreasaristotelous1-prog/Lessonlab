@@ -681,6 +681,7 @@
       <button class="code-pill" id="code-pill" title="This class's permanent join code. Click to copy.">
         <span class="code-lbl">CODE</span><span id="class-code">······</span>
       </button>
+      <button class="btn" id="share-btn" title="Copy the student link with this class's code filled in">🔗 <span class="long">Share</span></button>
       <button class="btn icon-btn" id="edit-class" title="Rename, clear or delete this class" aria-label="Edit class">✎</button>
       <button class="btn" id="new-class" title="Create a new class">+ <span class="long">New class</span><span class="short">New</span></button>
       <button class="btn" onclick="exportNines()" title="Download every class's 9s as one CSV, grouped by class">📊 Download 9s</button>
@@ -2678,11 +2679,38 @@
       switchClass(code);
     });
 
+    // Copy text to the clipboard, with fallbacks for installed apps / older browsers.
+    function copyText(text, onOk) {
+      const fallback = () => {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+          document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, 999);
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          if (ok) return onOk();
+        } catch (_) {}
+        prompt('Copy this:', text);
+      };
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(onOk).catch(fallback);
+      else fallback();
+    }
+
     document.getElementById('code-pill').addEventListener('click', () => {
       if (!classCode) return;
       const label = document.getElementById('class-code');
-      const done = () => { label.textContent = 'Copied!'; setTimeout(showCode, 1000); };
-      if (navigator.clipboard) navigator.clipboard.writeText(classCode).then(done).catch(() => {});
+      copyText(classCode, () => { label.textContent = 'Copied!'; setTimeout(showCode, 1000); });
+    });
+
+    // Share: the student page address with this class's code already filled in
+    document.getElementById('share-btn').addEventListener('click', () => {
+      if (!classCode) return;
+      const url = new URL('student.html', location.href);
+      url.search = ''; url.hash = '';
+      url.searchParams.set('code', classCode);
+      const btn = document.getElementById('share-btn');
+      const orig = btn.innerHTML;
+      copyText(url.toString(), () => { btn.textContent = '✓ Link copied'; setTimeout(() => { btn.innerHTML = orig; }, 1500); });
     });
 
     document.getElementById('new-class').addEventListener('click', async () => {
