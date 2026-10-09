@@ -1,0 +1,2711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lessonlab Teacher</title>
+  <link rel="manifest" href="manifest-teacher.webmanifest">
+  <meta name="theme-color" content="#c9b8f6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lessonlab Teacher">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='10' fill='%23c9b8f6' stroke='%237d68d0' stroke-width='4'/%3E%3Cg fill='none' stroke='%231f1b3a' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 16V44H31'/%3E%3Cpath d='M42 16V39Q42 44 47 44'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+  <style>
+    :root {
+      --bg: #f1f4f8;
+      --panel: #ffffff;
+      --panel-border: #e0e6ee;
+      --text: #2e3a4e;
+      --muted: #75839a;
+      --accent: #c2527e;
+      --accent-2: #4b8bbf;
+      --good: #3d9a72;
+      --bad: #c0505f;
+      --gold: #8a6d1f;
+      --soft-green-1: #dcefe5;
+      --soft-green-2: #b7dcc8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 12px 14px;
+      height: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ---------- THEMED SCROLLBARS ---------- */
+    * { scrollbar-width: thin; scrollbar-color: rgba(255,45,135,0.6) transparent; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,45,135,0.55); border-radius: 999px;
+      border: 2px solid transparent; background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,209,255,0.85); background-clip: padding-box; border: 2px solid transparent; }
+    ::-webkit-scrollbar-corner { background: transparent; }
+
+    /* ---------- TOP BAR (single line) ---------- */
+    .top-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 1px 2px rgba(29,42,71,.06);
+      padding: 7px 14px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+    }
+    .brand-wrap { display: flex; align-items: center; gap: 9px; justify-self: start; }
+    .logo { width: 46px; height: 46px; flex-shrink: 0; filter: drop-shadow(0 6px 14px rgba(255,45,135,0.45)); animation: logoWiggle 4s ease-in-out infinite; }
+    .logo svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .logo .pupil { animation: logoLook 5s ease-in-out infinite; }
+    .brand {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1; white-space: nowrap;
+    }
+    .brand .w-c { color: var(--accent); text-shadow: 0 0 18px rgba(255,45,135,0.45); }
+    .brand .w-f { color: var(--accent-2); text-shadow: 0 0 18px rgba(0,209,255,0.45); }
+    .brand .w-t { color: #e0a000; }
+    @keyframes logoWiggle { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg) translateY(-2px); } }
+    @keyframes logoLook { 0%,40%,100% { transform: translateX(0); } 55%,80% { transform: translateX(1.6px); } }
+
+    .code-wrap { display: flex; align-items: center; gap: 6px; justify-self: end; min-width: 0; }
+    .code-pill {
+      font-family: 'Outfit', sans-serif; display: inline-flex; align-items: center; gap: 8px;
+      padding: 3px 12px; border-radius: 12px; cursor: pointer;
+      border: 1.5px dashed rgba(255,213,0,0.6); background: rgba(255,213,0,0.1); color: var(--gold);
+      transition: transform .15s cubic-bezier(.3,1.6,.5,1), background .15s;
+    }
+    .code-pill:hover { background: rgba(255,213,0,0.2); transform: scale(1.03); }
+    .code-lbl { font-size: .58rem; font-weight: 600; letter-spacing: .12em; opacity: .85; }
+    #class-code { font-size: 1.15rem; font-weight: 700; letter-spacing: .16em; min-width: 6ch; text-align: center; }
+
+    /* Class dropdown: styled to match the cyan F in the logo */
+    .class-picker { display: inline-flex; }
+    #class-select {
+      appearance: none; -webkit-appearance: none; -moz-appearance: none;
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.8rem; color: var(--text);
+      min-width: 110px; max-width: 160px; padding: 6px 28px 6px 12px; border-radius: 11px;
+      cursor: pointer; outline: none; text-overflow: ellipsis;
+      border: 1px solid rgba(0,209,255,0.45);
+      background: rgba(0,209,255,0.12) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 L6 6.5 L11 1.5' fill='none' stroke='%2300d1ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 10px center;
+      transition: background-color .15s, box-shadow .15s;
+    }
+    #class-select:hover { background-color: rgba(0,209,255,0.2); }
+    #class-select:focus-visible { box-shadow: 0 0 0 3px rgba(0,209,255,0.3); }
+    #class-select:disabled { opacity: .5; cursor: default; }
+    #class-select option { background: #12172b; color: #fff; }
+    .controls { display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600; font-size: 0.78rem; white-space: nowrap;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.07);
+      color: var(--text);
+      padding: 6px 11px; border-radius: 11px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 5px;
+      transition: transform .15s cubic-bezier(.3,1.6,.5,1), background .15s, box-shadow .15s, filter .15s;
+    }
+    .btn:hover { transform: translateY(-2px) scale(1.03); background: rgba(255,255,255,0.12); }
+    .btn:active { transform: scale(.96); }
+    .btn.grey { background: linear-gradient(135deg, #4d546b, #3a4157); border-color: rgba(255,255,255,0.12); color: #e7e9f3; }
+    .btn.grey:hover { background: linear-gradient(135deg, #596179, #444c64); }
+    .btn.green {
+      background: linear-gradient(135deg, var(--soft-green-1), var(--soft-green-2));
+      border-color: transparent; color: #064e3b;
+      box-shadow: 0 6px 16px rgba(110,231,183,0.28);
+    }
+    .btn.green:hover { background: linear-gradient(135deg, #bbf7d0, #86efcf); }
+    .btn.muted { opacity: .65; }
+    .btn:disabled { opacity: .4; cursor: default; transform: none; }
+    .btn.icon-btn { padding: 6px 9px; min-width: 32px; justify-content: center; font-size: .9rem; }
+    .short { display: none; }
+    #pdf-upload { display: none; }
+    #doc-title { font-size: 0.7rem; color: var(--muted); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .mode-toggle {
+      position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; flex-shrink: 0;
+      background: rgba(0,0,0,0.4); border: 1px solid var(--panel-border);
+      border-radius: 12px; padding: 2px;
+    }
+    .mode-opt {
+      position: relative; z-index: 1; border: none; background: transparent; color: var(--muted);
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.78rem;
+      padding: 5px 0; min-width: 82px; border-radius: 10px; cursor: pointer; white-space: nowrap;
+      transition: color .2s;
+    }
+    .mode-opt.active { color: #fff; }
+    .mode-thumb {
+      position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc(50% - 2px); border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #ff7a3d);
+      box-shadow: 0 4px 14px rgba(255,45,135,0.45);
+      transition: transform .28s cubic-bezier(.3,1.5,.5,1), background .25s, box-shadow .25s;
+    }
+    .mode-toggle.solo .mode-thumb {
+      transform: translateX(100%);
+      background: linear-gradient(135deg, var(--accent-2), #2979ff);
+      box-shadow: 0 4px 14px rgba(0,209,255,0.45);
+    }
+
+    /* Shorter labels on narrower windows so the whole bar stays on one line */
+    @media (max-width: 1700px) {
+      .code-lbl { display: none; }
+      .long { display: none; }
+      .short { display: inline; }
+    }
+
+    @media (max-width: 1000px) {
+      .brand { font-size: 1.15rem; }
+      .logo { width: 38px; height: 38px; }
+      .mode-opt { min-width: 64px; }
+      .btn { padding: 6px 8px; }
+      #class-select { min-width: 90px; max-width: 120px; }
+    }
+
+    #sound-alert-banner {
+      display: none; align-items: center; justify-content: space-between;
+      background: rgba(251,191,36,0.14); border: 1px solid rgba(251,191,36,0.4);
+      color: #fde68a; padding: 8px 14px; border-radius: 14px; margin-bottom: 10px;
+      font-size: 0.86rem; font-weight: 700;
+    }
+    #sound-alert-banner button {
+      background: var(--gold); color: #3b1d00; border: none; padding: 5px 12px;
+      border-radius: 10px; font-weight: 800; cursor: pointer; font-family: 'Outfit', sans-serif;
+    }
+
+    /* ---------- WORKSPACE ---------- */
+    .workspace {
+      display: flex; flex: 1; min-height: 0; position: relative;
+      background: var(--panel); border: 1px solid var(--panel-border);
+      border-radius: 24px; overflow: hidden; backdrop-filter: blur(14px);
+    }
+    .pdf-panel { display: flex; flex-direction: column; background: rgba(5,8,18,0.55); }
+    .pdf-toolbar {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 8px 14px; font-size: 0.85rem; border-bottom: 1px solid var(--panel-border);
+    }
+    .pdf-toolbar .btn { padding: 5px 12px; font-size: 0.8rem; border-radius: 10px; }
+    .pdf-toolbar .btn.icon { padding: 5px 10px; min-width: 34px; justify-content: center; }
+    .pdf-toolbar .btn:disabled { opacity: .3; cursor: not-allowed; transform: none; }
+    #page-num-display { font-family: 'Outfit', sans-serif; font-weight: 600; white-space: nowrap; }
+    #page-input {
+      width: 3.6em; padding: 4px 6px; margin: 0 2px; text-align: center;
+      font: inherit; font-size: .82rem; color: var(--text);
+      background: rgba(0,0,0,0.4); border: 1px solid var(--panel-border); border-radius: 9px;
+      outline: none; user-select: text; -moz-appearance: textfield; appearance: textfield;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    #page-input::-webkit-outer-spin-button, #page-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    #page-input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(0,209,255,0.25); }
+    #zoom-display { color: var(--muted); font-size: 0.78rem; font-weight: 800; min-width: 42px; text-align: center; }
+
+    /* Big, high-contrast cursors so the pointer stands out on both the white page and the dark background */
+    .pdf-canvas-container {
+      flex: 1; min-height: 0; overflow: auto; padding: 20px; position: relative;
+      touch-action: pan-x pan-y;
+      cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M5 3 L5 25 L10.5 20 L14.6 29 L19 27 L15 18 L22.5 18 Z' fill='%23ff2d87' stroke='%230b0f1e' stroke-width='5' stroke-linejoin='round'/><path d='M5 3 L5 25 L10.5 20 L14.6 29 L19 27 L15 18 L22.5 18 Z' fill='%23ff2d87' stroke='%23ffffff' stroke-width='2' stroke-linejoin='round'/></svg>") 5 3, default;
+    }
+    .pdf-canvas-container.panning {
+      cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M5 3 L5 25 L10.5 20 L14.6 29 L19 27 L15 18 L22.5 18 Z' fill='%2300d1ff' stroke='%230b0f1e' stroke-width='5' stroke-linejoin='round'/><path d='M5 3 L5 25 L10.5 20 L14.6 29 L19 27 L15 18 L22.5 18 Z' fill='%2300d1ff' stroke='%23ffffff' stroke-width='2' stroke-linejoin='round'/></svg>") 5 3, move;
+    }
+    .empty-state {
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; color: var(--muted); font-family: 'Outfit', sans-serif; pointer-events: none; text-align: center;
+    }
+    .empty-state .big { font-size: 4rem; animation: floaty 3s ease-in-out infinite; }
+    .empty-state p { margin: 0; font-size: 1.05rem; }
+    #canvas-wrapper {
+      display: none; width: max-content; margin: 0 auto;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.6); border-radius: 8px; overflow: hidden;
+    }
+    canvas { display: block; }
+
+    /* Two tabs: only one panel is shown at a time */
+    .workspace { flex-direction: column; }
+    .tabs { display: flex; gap: 6px; padding: 10px 12px 0; border-bottom: 1px solid var(--panel-border); flex-shrink: 0; }
+    .tab {
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: .95rem; cursor: pointer;
+      color: var(--muted); background: transparent; border: 1px solid transparent; border-bottom: none;
+      padding: 8px 18px; border-radius: 12px 12px 0 0; display: inline-flex; align-items: center; gap: 8px;
+      transition: color .15s, background .15s;
+    }
+    .tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .tab.active { color: #fff; background: rgba(255,255,255,0.09); border-color: var(--panel-border); box-shadow: inset 0 3px 0 var(--accent-2); }
+    .tab[data-tab="students"].active { box-shadow: inset 0 3px 0 var(--accent); }
+    .tab-count { font-size: .72rem; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: rgba(255,255,255,0.12); }
+    .workspace > .pdf-panel, .workspace > .roster-panel { flex: 1; min-width: 0; max-width: none; min-height: 0; height: auto; }
+    .workspace[data-view="pdf"] > .roster-panel { display: none; }
+    .workspace[data-view="students"] > .pdf-panel { display: none; }
+    #doc-title { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: .8rem; font-weight: 700; }
+    .roster-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .roster-header small { margin-left: 0; }
+
+    /* ---------- ROSTER ---------- */
+    .roster-panel { flex: 1; display: flex; flex-direction: column; padding: 12px; }
+    .roster-header {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin: 0 4px 10px;
+    }
+    .rh-title { font-family: 'Outfit', sans-serif; font-size: 0.82rem; font-weight: 600; letter-spacing: .14em; color: var(--muted); }
+    .roster-header small { margin-left: auto; font-size: .72rem; font-weight: 700; color: var(--muted); }
+    .chip {
+      font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.07); color: var(--muted); white-space: nowrap;
+    }
+
+    /* Pills are laid out by flex-wrap and sized in JS (--fs) so the whole class fits without scrolling.
+       Each pill is as wide as its name needs, so names are never cut off. Everything inside is in em. */
+    .grid {
+      --fs: 16px;
+      display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px;
+      overflow-y: auto; flex: 1; padding: 4px;
+    }
+    .grid-empty { flex: 1 1 100%; text-align: center; color: var(--muted); padding: 40px 10px; font-family: 'Outfit', sans-serif; }
+    .grid-empty .big { font-size: 3rem; display: block; margin-bottom: 6px; animation: floaty 3s ease-in-out infinite; }
+
+    .card {
+      font-size: var(--fs);
+      position: relative; display: flex; align-items: center; gap: .55em; flex: 0 0 auto; width: max-content;
+      padding: .4em .45em .4em .55em; border-radius: 999px; white-space: nowrap;
+      background: linear-gradient(160deg, rgba(255,255,255,0.11), rgba(255,255,255,0.04));
+      border: 1.5px solid var(--panel-border);
+      transition: transform .2s cubic-bezier(.3,1.6,.5,1), box-shadow .25s;
+      animation: cardIn .45s cubic-bezier(.3,1.5,.5,1) both;
+    }
+    .card:hover { transform: translateY(-2px); }
+    .emoji {
+      font-size: 2.1em; line-height: 1; width: 1.25em; height: 1.25em; display: grid; place-items: center; flex-shrink: 0;
+      background: rgba(255,255,255,0.1); border-radius: 50%;
+      font-family: 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
+    }
+    .student-name { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 1.05em; }
+
+    .score {
+      display: flex; align-items: center; gap: .3em;
+      background: rgba(0,0,0,0.3); border-radius: 999px; padding: .2em .65em .2em .45em;
+      font-family: 'Outfit', sans-serif;
+    }
+    .score .num { font-weight: 700; font-size: 1.1em; color: var(--gold); min-width: 1ch; }
+    .score .lbl { font-size: .7em; color: var(--muted); font-weight: 600; }
+    .score.pop { animation: pop .5s cubic-bezier(.3,1.8,.5,1); }
+
+    .reward-btn {
+      border: none; border-radius: 999px; padding: .35em .8em; cursor: pointer;
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .95em; color: #064e3b;
+      background: linear-gradient(135deg, var(--soft-green-1), var(--soft-green-2));
+      box-shadow: 0 4px 12px rgba(110,231,183,0.25);
+      transition: transform .15s cubic-bezier(.3,1.7,.5,1), filter .15s;
+    }
+    .reward-btn:hover { transform: scale(1.08); filter: brightness(1.06); }
+    .reward-btn:active { transform: scale(.94); }
+
+    .del-btn {
+      width: 1.7em; height: 1.7em; border-radius: 50%; flex-shrink: 0;
+      border: none; background: rgba(255,255,255,0.07); color: var(--muted);
+      font-size: .8em; font-weight: 800; line-height: 1; cursor: pointer; padding: 0;
+      display: grid; place-items: center; opacity: .5;
+      transition: background .15s, color .15s, opacity .15s, transform .15s cubic-bezier(.3,1.7,.5,1);
+    }
+    .card:hover .del-btn { opacity: 1; }
+    .del-btn:hover { background: rgba(255,59,92,0.95); color: #fff; transform: scale(1.15); }
+
+    .floaty-plus {
+      position: absolute; right: 2.2em; top: -.4em; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.6em;
+      color: var(--soft-green-2); text-shadow: 0 2px 10px rgba(110,231,183,.6); pointer-events: none;
+      animation: rise 1s ease-out forwards;
+    }
+
+    /* ---------- CLASS DIALOG ---------- */
+    .modal {
+      position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+      padding: 20px; background: rgba(4,6,16,0.72); backdrop-filter: blur(6px);
+      animation: fadeIn .18s ease-out;
+    }
+    .modal[hidden] { display: none; }
+    .modal-card {
+      width: min(420px, 100%); padding: 22px 22px 16px; border-radius: 22px;
+      background: linear-gradient(160deg, rgba(34,40,78,.98), rgba(14,18,40,.98));
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,45,135,.15);
+      animation: modalIn .28s cubic-bezier(.3,1.5,.5,1);
+    }
+    .modal-card h3 { margin: 0 0 4px; font-family: 'Outfit', sans-serif; font-size: 1.25rem; }
+    .modal-sub { margin: 0 0 14px; color: var(--muted); font-size: .86rem; line-height: 1.35; }
+    .modal-label {
+      display: block; margin-bottom: 5px; font-family: 'Outfit', sans-serif; font-size: .72rem;
+      font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+    }
+    #modal-name {
+      width: 100%; padding: 11px 14px; font: inherit; font-size: 1rem; font-weight: 700; color: var(--text);
+      background: rgba(0,0,0,.4); border: 1.5px solid var(--panel-border); border-radius: 13px;
+      outline: none; user-select: text; transition: border-color .15s, box-shadow .15s;
+    }
+    #modal-name:focus { border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(0,209,255,.25); }
+    .modal-error { min-height: 1.3em; margin-top: 6px; color: #ff6b85; font-size: .82rem; font-weight: 700; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+    .modal-actions .btn { padding: 8px 16px; font-size: .88rem; border-radius: 12px; }
+    .modal-danger {
+      display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 12px;
+      border-top: 1px solid var(--panel-border);
+    }
+    .link-btn {
+      background: none; border: none; padding: 2px 0; font-family: 'Outfit', sans-serif;
+      font-weight: 600; font-size: .8rem; color: var(--muted); cursor: pointer;
+    }
+    .link-btn:hover { color: var(--text); text-decoration: underline; }
+    .link-btn.red { color: #ff6b85; }
+    .link-btn.red:hover { color: #ff3b5c; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(14px) scale(.94); } to { opacity: 1; transform: none; } }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(14px) scale(.9); } to { opacity: 1; transform: none; } }
+    @keyframes bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
+    @keyframes droop { 0%,100% { transform: rotate(-6deg) scaleY(.96); } 50% { transform: rotate(-3deg) scaleY(.93); } }
+    @keyframes blink { 0%,92%,100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+    @keyframes zzz { 0% { opacity: 0; transform: translate(0,6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(6px,-10px); } }
+    @keyframes alarm { 0%,100% { box-shadow: 0 0 14px rgba(251,113,133,0.2); } 50% { box-shadow: 0 0 30px rgba(251,113,133,0.5); } }
+    @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+    @keyframes rise { 0% { opacity: 0; transform: translate(-50%,0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%,-70px) scale(1.2); } }
+    @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+    /* =====================================================
+       CALM CLASSROOM THEME (soft, muted, flat)
+       ===================================================== */
+    * { scrollbar-color: #c3ccdb transparent; }
+    ::-webkit-scrollbar-thumb { background: #c3ccdb; }
+    ::-webkit-scrollbar-thumb:hover { background: #9fadc5; background-clip: padding-box; border: 2px solid transparent; }
+
+    .logo { filter: none; animation: none; }
+    .brand .w-c { color: #c2527e; text-shadow: none; }
+    .brand .w-f { color: #4b8bbf; text-shadow: none; }
+    .brand .w-t { color: #c99a2e; text-shadow: none; }
+
+    .btn { background: #fff; border: 1px solid #d8dfea; color: var(--text); box-shadow: none; border-radius: 9px; font-weight: 700; }
+    .btn:hover { transform: none; background: #f4f6fa; border-color: #c6d0e0; }
+    .btn:active { transform: scale(.98); }
+    .btn.grey { background: #e8ecf2; border-color: #d8dfea; color: #43506a; }
+    .btn.grey:hover { background: #dde3ec; }
+    .btn.green { background: var(--soft-green-1); border: 1px solid var(--soft-green-2); color: #2f6b4f; box-shadow: none; }
+    .btn.green:hover { background: #cfe8dc; }
+
+    .code-pill { border: 1.5px dashed #d6c88f; background: #f8f3df; color: #6f5f2a; }
+    .code-pill:hover { background: #f3ecd0; transform: none; }
+
+    #class-select {
+      color: var(--text); background-color: #fff; border: 1px solid #d8dfea; border-radius: 9px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 L6 6.5 L11 1.5' fill='none' stroke='%234b8bbf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    }
+    #class-select:hover { background-color: #f4f6fa; }
+    #class-select:focus-visible { box-shadow: 0 0 0 3px rgba(75,139,191,.22); }
+    #class-select option { background: #fff; color: var(--text); }
+
+    .mode-toggle { background: #eceff4; border: 1px solid #dde3ec; }
+    .mode-thumb { background: #6b8cc7; box-shadow: none; }
+    .mode-toggle.solo .mode-thumb { background: #6fa59c; box-shadow: none; }
+
+    #sound-alert-banner { background: #f8f3df; border-color: #e3d79f; color: #6b5a22; }
+    #sound-alert-banner button { background: #e3c46a; color: #3d3210; }
+
+    .top-bar, .workspace { box-shadow: none; }
+    .tabs { background: #f6f8fb; }
+    .tab:hover { background: #edf0f5; }
+    .tab.active { color: var(--text); background: #fff; border-color: var(--panel-border); box-shadow: inset 0 3px 0 #6b8cc7; position: relative; top: 1px; }
+    .tab[data-tab="students"].active { box-shadow: inset 0 3px 0 #6fa59c; }
+    .tab-count { background: #e8ecf2; }
+
+    .pdf-panel { background: #e9edf3; }
+    #page-input { border-color: #d8dfea; }
+    #page-input:focus { border-color: #6b8cc7; box-shadow: 0 0 0 3px rgba(107,140,199,.2); }
+    #canvas-wrapper { box-shadow: 0 2px 12px rgba(46,58,78,.18); }
+
+    .chip { background: #eceff4; color: var(--text); }
+
+    /* Student pill: the whole pill is the "+1 to 9s" button */
+    .card {
+      background: #fff; border: 1.5px solid #e0e6ee; box-shadow: none; cursor: pointer;
+      transition: background .12s, border-color .12s, transform .1s;
+    }
+    .card:hover { background: #f7faf8; border-color: #b7dcc8; transform: none; box-shadow: none; }
+    .card:active { transform: scale(.975); background: #ecf6f0; }
+    .emoji { background: #f1f4f8; }
+    .student-name { color: var(--text); font-weight: 700; }
+    .score { background: #f5efd9; }
+    .score .num { color: #7a6320; }
+    .score .lbl { color: #8c7a45; }
+    .edit-btn {
+      width: 1.8em; height: 1.8em; border-radius: 50%; flex-shrink: 0; border: none; padding: 0; cursor: pointer;
+      background: transparent; color: #98a4b8; font-size: .85em; line-height: 1; display: grid; place-items: center;
+      transition: background .12s, color .12s;
+    }
+    .edit-btn:hover { background: #e6ebf3; color: var(--text); }
+    .floaty-plus { color: #3d9a72; text-shadow: none; }
+
+    .modal { background: rgba(46,58,78,.4); backdrop-filter: none; }
+    .modal-card { background: #fff; border: 1px solid var(--panel-border); box-shadow: 0 18px 44px rgba(46,58,78,.25); }
+    #modal-name, #s-name, #s-stars {
+      width: 100%; padding: 10px 13px; font: inherit; font-size: 1rem; font-weight: 700; color: var(--text);
+      background: #fff; border: 1.5px solid #d8dfea; border-radius: 11px; outline: none; user-select: text;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    #modal-name:focus, #s-name:focus, #s-stars:focus { border-color: #6b8cc7; box-shadow: 0 0 0 3px rgba(107,140,199,.2); }
+    #s-stars { width: 120px; }
+    .modal-error, .link-btn.red { color: #b3414f; }
+    .link-btn.red:hover { color: #8c2733; }
+
+    /* =====================================================
+       PASTEL ACCENTS
+       ===================================================== */
+    :root { --bg: #f5f3fb; --text: #2f3552; --muted: #7b82a0; --panel-border: #e4e1f1; }
+    body { background: linear-gradient(135deg, #f6f1fb 0%, #eef5fb 50%, #effaf5 100%) fixed; }
+    .brand .w-c { color: #e0719e; }
+    .brand .w-f { color: #6aa6dc; }
+    .brand .w-t { color: #e2a93f; }
+    .logo svg path[stroke="#c2527e"] { stroke: #e0719e; }
+    .logo svg g[stroke="#4b8bbf"] { stroke: #6aa6dc; }
+
+    .btn { border-color: #e1def0; }
+    .btn:hover { background: #f4f1fb; border-color: #cfc8ea; }
+    .btn.grey { background: #ebe8f5; border-color: #ddd8ee; color: #4a4f6e; }
+    .btn.grey:hover { background: #e1ddf0; }
+    .btn.green { background: #d5f2e3; border-color: #a9dcc0; color: #276a4b; }
+    .btn.green:hover { background: #c6ebd8; }
+
+    .code-pill { border-color: #f0bf9c; background: #ffe9d9; color: #86492a; }
+    .code-pill:hover { background: #ffdfc9; }
+    #class-select { border-color: #c9d9f0; background-color: #f1f7fd; }
+    #class-select:hover { background-color: #e7f1fb; }
+
+    .mode-toggle { background: #efecf8; border-color: #e1def0; }
+    .mode-opt.active { color: #3a2f6a; }
+    .mode-thumb { background: #cbbcf3; }
+    .mode-toggle.solo .mode-thumb { background: #a9e1d2; }
+    .mode-toggle.solo .mode-opt.active { color: #1d5a4a; }
+
+    .tabs { background: #f6f3fc; }
+    .tab:hover { background: #eeeaf8; }
+    .tab.active { box-shadow: inset 0 3px 0 #b9a6f0; }
+    .tab[data-tab="students"].active { box-shadow: inset 0 3px 0 #8fd6c0; }
+    .tab-count { background: #e6f5ee; color: #2c6b4d; }
+    .chip { background: #e9f1fb; color: #355a85; }
+    .rh-title { color: #8a7fb8; }
+
+    .pdf-panel { background: #ece9f6; }
+
+    .card { background: var(--pb, #fff); border-color: var(--pd, #e0e6ee); }
+    .card:hover { background: var(--pb, #fff); border-color: var(--pd, #e0e6ee); filter: brightness(.97); }
+    .card:active { background: var(--pb, #fff); filter: brightness(.93); transform: scale(.975); }
+    .emoji { background: rgba(255,255,255,.7); }
+    .score { background: rgba(255,255,255,.75); }
+    .score .num { color: #6a5418; }
+    .score .lbl { color: #85703a; }
+
+    /* Edit students list */
+    .modal-card.wide { width: min(560px, 100%); }
+    #edit-list { max-height: min(55vh, 420px); overflow-y: auto; margin: 4px -6px 2px; padding: 0 6px; display: flex; flex-direction: column; gap: 6px; }
+    .erow { display: flex; align-items: center; gap: 8px; padding: 5px 8px 5px 6px; border-radius: 12px; background: #f6f4fc; border: 1px solid #e8e5f3; }
+    .erow .emoji { font-size: 1.5rem; width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; }
+    .erow input {
+      font: inherit; font-weight: 700; font-size: .92rem; color: var(--text); background: #fff; user-select: text;
+      border: 1.5px solid #e1def0; border-radius: 9px; padding: 6px 9px; outline: none; min-width: 0;
+    }
+    .erow input:focus { border-color: #b9a6f0; box-shadow: 0 0 0 3px rgba(185,166,240,.25); }
+    .erow .e-name { flex: 1; }
+    .erow .e-stars { width: 4.6em; text-align: center; }
+    .e-remove {
+      font: inherit; font-weight: 700; font-size: .8rem; cursor: pointer; padding: 6px 10px; border-radius: 9px;
+      color: #a8404f; background: #fde6ea; border: 1px solid #f4bcc6;
+    }
+    .e-remove:hover { background: #fbd5dc; }
+    .erow.removed { background: #fdf1f3; border-color: #f4d4da; }
+    .erow.removed .e-name { text-decoration: line-through; color: var(--muted); }
+    .erow.removed input { opacity: .5; pointer-events: none; }
+    .erow.removed .emoji { opacity: .5; }
+    .erow.removed .e-remove { color: #4a4f6e; background: #fff; border-color: #ddd8ee; }
+
+    /* Class timer */
+    .tabs { align-items: flex-end; }
+    .timer-wrap { margin-left: auto; align-self: center; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; }
+    .timer-icon { font-size: 1.1rem; }
+    .timer-set { display: inline-flex; align-items: center; gap: 4px; }
+    .timer-unit { font-weight: 700; font-size: .8rem; color: var(--muted); margin-right: 2px; }
+    #t-min {
+      width: 3.4em; padding: 5px 4px; text-align: center; font: inherit; font-weight: 800; font-size: .9rem; color: var(--text);
+      background: #fff; border: 1px solid #e1def0; border-radius: 9px; outline: none; user-select: text;
+      -moz-appearance: textfield; appearance: textfield;
+    }
+    #t-min::-webkit-outer-spin-button, #t-min::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    #t-min:focus { border-color: #b9a6f0; box-shadow: 0 0 0 3px rgba(185,166,240,.25); }
+    .timer-clock {
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 1.5rem; letter-spacing: .04em;
+      min-width: 4.2ch; text-align: center; padding: 1px 12px; border-radius: 10px; background: #e9f1fb; color: #2f5a86;
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-clock.paused { background: #f1eef9; color: #7b82a0; }
+    .timer-clock.low { background: #ffe9d9; color: #a4531f; }
+    .timer-clock.done { background: #fde1ea; color: #a13a5d; font-size: 1.05rem; animation: timerPulse 1s ease-in-out infinite; }
+    @keyframes timerPulse { 50% { opacity: .55; } }
+    .timer-wrap [hidden] { display: none !important; }
+
+    /* =====================================================
+       COMPACT BARS
+       ===================================================== */
+    body { padding: 6px 8px; }
+    .top-bar {
+      display: flex; justify-content: space-between; grid-template-columns: none;
+      padding: 3px 10px; border-radius: 10px; margin-bottom: 6px; gap: 10px;
+    }
+    .logo { width: 28px; height: 28px; }
+    .brand { font-size: 1.15rem; }
+    .brand-wrap { gap: 7px; }
+    .top-bar .btn { padding: 3px 9px; font-size: .74rem; }
+    .top-bar .btn.icon-btn { padding: 3px 7px; min-width: 26px; }
+    #class-select { padding: 3px 24px 3px 10px; font-size: .76rem; min-width: 100px; }
+    .code-pill { padding: 0 10px; border-radius: 9px; }
+    #class-code { font-size: .95rem; }
+    .code-lbl { font-size: .5rem; }
+
+    .workspace { border-radius: 10px; }
+    .tabs {
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px;
+      padding: 4px 8px; background: #e7e1f5; border: none;
+    }
+    .tab-group { display: flex; gap: 4px; justify-self: start; }
+    .tabs .controls { justify-self: center; }
+    .tabs .timer-wrap { justify-self: end; padding: 0; margin: 0; gap: 6px; }
+
+    /* Tabs: borderless, soft pill that lifts when selected */
+    .tab {
+      border: none; border-radius: 8px; padding: 4px 13px; font-size: .84rem; font-weight: 700;
+      color: #6b6392; background: transparent; position: static; top: 0; box-shadow: none;
+      transition: background .15s, color .15s, box-shadow .15s;
+    }
+    .tab:hover { background: rgba(255,255,255,.55); color: #403a66; }
+    .tab.active, .tab[data-tab="students"].active {
+      background: #fff; color: #2f3552; border: none; position: static; top: 0;
+      box-shadow: 0 1px 3px rgba(70,55,120,.18);
+    }
+    .tab-count { background: #e6f5ee; color: #2c6b4d; font-size: .68rem; padding: 0 7px; }
+
+    .tabs .mode-toggle { background: rgba(255,255,255,.6); border: none; padding: 2px; border-radius: 9px; }
+    .tabs .mode-opt { padding: 3px 0; min-width: 76px; font-size: .74rem; border-radius: 7px; }
+    .tabs .mode-thumb { border-radius: 7px; }
+
+    .tabs .timer-icon { font-size: .95rem; }
+    .tabs .btn { padding: 3px 9px; font-size: .74rem; border-radius: 8px; }
+    .tabs .btn.icon-btn { padding: 3px 7px; min-width: 24px; }
+    #t-min { padding: 2px 3px; font-size: .82rem; border-radius: 8px; border: none; background: rgba(255,255,255,.75); }
+    .timer-clock { font-size: 1.05rem; padding: 0 10px; border-radius: 8px; }
+    .timer-clock.done { font-size: .85rem; }
+
+    .pdf-toolbar { padding: 3px 10px; gap: 6px; height: 30px; flex-wrap: nowrap; background: #ece9f6; }
+    .pdf-toolbar .btn { padding: 3px 10px; font-size: .76rem; }
+    .pdf-toolbar .btn.icon { padding: 3px 8px; min-width: 28px; }
+    #page-input { padding: 1px 4px; }
+    .pdf-canvas-container { padding: 10px; }
+
+    .roster-panel { padding: 6px 8px 8px; }
+    .roster-header { margin: 0 2px 4px; }
+    .roster-header .btn { padding: 3px 10px; font-size: .76rem; }
+    .grid { padding: 2px; }
+
+    @media (max-width: 760px) {
+      .tabs { grid-template-columns: auto auto; row-gap: 4px; }
+      .tabs .controls { grid-column: 1 / -1; grid-row: 2; }
+    }
+
+    .brand { font-weight: 700; letter-spacing: -0.02em; font-size: 1.3rem; }
+    .brand .w-c { color: #e0719e; }
+    .brand .w-f { color: #5b9bd5; }
+    #page-num-display { margin-left: 0; }
+
+    /* Students bar matches the booklet toolbar */
+    .roster-panel { padding: 0; }
+    .roster-header {
+      margin: 0; padding: 3px 10px; gap: 8px; flex-wrap: nowrap; height: 30px;
+      background: #ece9f6; border-bottom: 1px solid var(--panel-border); font-size: .85rem;
+    }
+    .roster-header small { margin-left: auto; margin-right: 4px; }
+    .roster-actions { margin-left: 0; }
+    .roster-panel .grid { padding: 8px 10px 10px; }
+
+    /* purple wordmark to match the logo */
+    .brand .w-c { color: #7d68d0; }
+    .brand .w-f { color: #a68ce6; }
+
+    /* page number box */
+    #page-input {
+      background: #fff; color: var(--text); border: 1px solid #ddd8ee; border-radius: 8px;
+      padding: 1px 4px; font-weight: 700;
+    }
+    #page-input:focus { border-color: #b9a6f0; box-shadow: 0 0 0 3px rgba(185,166,240,.25); }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div class="brand-wrap">
+      <div class="logo" aria-label="LessonLab logo">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="56" height="56" rx="10" fill="#c9b8f6" stroke="#7d68d0" stroke-width="4"/>
+          <g fill="none" stroke="#1f1b3a" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 16 V44 H31"/>
+            <path d="M42 16 V39 Q42 44 47 44"/>
+          </g>
+        </svg>
+      </div>
+      <div class="brand"><span class="w-c">Lesson</span><span class="w-f">lab</span></div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="class-picker" title="Choose which class is live">
+        <select id="class-select" aria-label="Class"></select>
+      </div>
+      <button class="code-pill" id="code-pill" title="This class's permanent join code. Click to copy.">
+        <span class="code-lbl">CODE</span><span id="class-code">······</span>
+      </button>
+      <button class="btn icon-btn" id="edit-class" title="Rename, clear or delete this class" aria-label="Edit class">✎</button>
+      <button class="btn" id="new-class" title="Create a new class">+ <span class="long">New class</span><span class="short">New</span></button>
+      <button class="btn" onclick="exportNines()" title="Download every class's 9s as one CSV, grouped by class">📊 Download 9s</button>
+    </div>
+  </div>
+
+  <div id="sound-alert-banner">
+    <span>⚠️ Your browser is blocking alert sounds until you interact with the page. Click "Test &amp; enable" to turn them on.</span>
+    <button onclick="unlockAndTestAudio()">Test &amp; enable</button>
+  </div>
+
+  <div class="workspace" id="workspace" data-view="pdf">
+    <div class="tabs" role="tablist">
+      <div class="tab-group">
+        <button class="tab active" role="tab" data-tab="pdf">📖 Booklet</button>
+        <button class="tab" role="tab" data-tab="students">👤 Students <span class="tab-count" id="tab-count">0</span></button>
+      </div>
+    <div class="controls">
+      <div class="mode-toggle" id="mode-toggle" role="group" aria-label="Booklet mode">
+        <div class="mode-thumb"></div>
+        <button class="mode-opt active" data-mode="teacher" title="Students follow your page">🔒 Teacher</button>
+        <button class="mode-opt" data-mode="solo" title="Students work through the booklet on their own">🔓 Solo</button>
+      </div>
+    </div>
+      <div class="timer-wrap" id="timer-wrap">
+        <span class="timer-icon">⏱</span>
+        <span class="timer-set" id="timer-set">
+          <button class="btn icon-btn" id="t-minus" aria-label="One minute less">−</button>
+          <input id="t-min" type="number" min="1" max="180" value="5" aria-label="Minutes">
+          <span class="timer-unit">min</span>
+          <button class="btn icon-btn" id="t-plus" aria-label="One minute more">+</button>
+        </span>
+        <span class="timer-clock" id="t-clock" hidden>05:00</span>
+        <button class="btn green" id="t-start">▶ Start</button>
+        <button class="btn" id="t-reset" hidden>Reset</button>
+      </div>
+    </div>
+    <div class="pdf-panel" id="pdf-panel">
+      <div class="pdf-toolbar">
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+          <label class="btn grey" title="PDF or pictures. For PowerPoint or Word, export to PDF first.">
+            📁 Choose booklet
+            <input type="file" id="pdf-upload" multiple accept=".pdf,application/pdf,image/png,image/jpeg,image/webp,.pptx,.ppt,.docx,.doc,.key">
+          </label>
+          <span id="doc-title">No file</span>
+          <button class="btn icon" onclick="zoomBy(1/1.2)" title="Zoom out">−</button>
+          <span id="zoom-display">100%</span>
+          <button class="btn icon" onclick="zoomBy(1.2)" title="Zoom in">+</button>
+          <button class="btn icon" onclick="resetZoom()" title="Fit to width">⤢</button>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span id="page-num-display">
+            <span id="page-label">No document loaded</span>
+            <span id="page-controls" style="display:none;">
+              Page <input id="page-input" type="number" min="1" value="1" title="Type a page number and press Enter"> / <span id="page-total">0</span>
+            </span>
+          </span>
+          <button class="btn" id="prev-page" onclick="changePage(-1)" disabled>← Prev</button>
+          <button class="btn" id="next-page" onclick="changePage(1)" disabled>Next →</button>
+        </div>
+      </div>
+
+      <div class="pdf-canvas-container" id="canvas-container">
+        <div class="empty-state" id="empty-state">
+          <div class="big">📚</div>
+          <p>Pick a booklet PDF to share with the class</p>
+        </div>
+        <div id="canvas-wrapper"><canvas id="pdf-render"></canvas></div>
+      </div>
+    </div>
+
+
+    <div class="roster-panel" id="roster-panel">
+      <div class="roster-header">
+        <span class="chip" id="chip-total">0 students</span>
+        <small>ranked by 9s</small>
+        <div class="roster-actions">
+          <button id="edit-students" class="btn" title="Rename students, fix 9s or remove students">✎ Edit</button>
+          <button id="sound-btn" class="btn" onclick="toggleSound()">🔊 <span class="long">Sound on</span><span class="short">On</span></button>
+          <button class="btn green" onclick="rewardAllActive()">🌟 Award 9s to everyone</button>
+        </div>
+      </div>
+      <div class="grid" id="roster">
+        <div class="grid-empty"><span class="big">👀</span>Waiting for students to join…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="student-modal" hidden>
+    <form class="modal-card wide" id="student-form" autocomplete="off">
+      <h3>Edit students</h3>
+      <p class="modal-sub">Rename, correct 9s, or remove students from this session. Nothing changes until you press Save.</p>
+      <div id="edit-list"></div>
+      <div id="edit-empty" class="modal-sub" style="display:none">No students have joined yet.</div>
+      <div class="modal-error" id="e-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="e-cancel">Cancel</button>
+        <button type="submit" class="btn green">Save changes</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="modal" hidden>
+    <form class="modal-card" id="modal-form" autocomplete="off">
+      <h3 id="modal-title">New class</h3>
+      <p class="modal-sub" id="modal-sub"></p>
+      <label class="modal-label" for="modal-name">Class name</label>
+      <input id="modal-name" type="text" maxlength="30" placeholder="e.g. 9B Maths" spellcheck="false">
+      <div class="modal-error" id="modal-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="modal-cancel">Cancel</button>
+        <button type="submit" class="btn green" id="modal-ok">Create class</button>
+      </div>
+      <div class="modal-danger" id="modal-danger">
+        <button type="button" class="link-btn" id="modal-clear">Clear 9s &amp; booklet</button>
+        <button type="button" class="link-btn red" id="modal-delete">Delete class</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+/* PowerPoint (.pptx) → pictures, drawn in the browser */
+/* Lessonlab: draws the slides of a .pptx onto canvases, entirely in the browser.
+   window.PptxConvert.render(arrayBuffer, { width, onProgress }) -> { canvases, notes }
+   It reads the .pptx (a zip of XML files) itself, so it needs no extra libraries and no server.
+   It covers text, pictures, shapes, tables, backgrounds and groups. Charts and SmartArt are shown as a labelled box. */
+(function () {
+  'use strict';
+  const EMU_PT = 12700;
+
+  /* ---------- zip ---------- */
+  async function readZip(buf) {
+    const u8 = new Uint8Array(buf), dv = new DataView(buf);
+    let eocd = -1;
+    for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('This does not look like a PowerPoint (.pptx) file.');
+    const count = dv.getUint16(eocd + 10, true);
+    let p = dv.getUint32(eocd + 16, true);
+    const dec = new TextDecoder();
+    const entries = new Map();
+    for (let n = 0; n < count; n++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+      const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+      const off = dv.getUint32(p + 42, true);
+      entries.set(dec.decode(u8.subarray(p + 46, p + 46 + nlen)), { method, csize, off });
+      p += 46 + nlen + elen + clen;
+    }
+    const cache = new Map();
+    async function get(name) {
+      if (cache.has(name)) return cache.get(name);
+      const e = entries.get(name);
+      if (!e) return null;
+      const nlen = dv.getUint16(e.off + 26, true), elen = dv.getUint16(e.off + 28, true);
+      const start = e.off + 30 + nlen + elen;
+      const data = u8.subarray(start, start + e.csize);
+      let out;
+      if (e.method === 0) out = data;
+      else if (e.method === 8) {
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        out = new Uint8Array(await new Response(stream).arrayBuffer());
+      } else throw new Error('This file uses a compression type that is not supported.');
+      cache.set(name, out);
+      return out;
+    }
+    return { get, has: (n) => entries.has(n), text: async (n) => { const d = await get(n); return d ? dec.decode(d) : null; } };
+  }
+
+  /* ---------- xml helpers ---------- */
+  const parseXml = (t) => new DOMParser().parseFromString(t, 'application/xml');
+  const kids = (el, n) => (el ? [...el.children].filter((c) => c.localName === n) : []);
+  const kid = (el, n) => (el ? [...el.children].find((c) => c.localName === n) || null : null);
+  const at = (el, ...names) => { let c = el; for (const n of names) { c = kid(c, n); if (!c) return null; } return c; };
+  const attr = (el, n, d) => (el && el.getAttribute(n) != null ? el.getAttribute(n) : d);
+  const numAttr = (el, n, d) => { const v = attr(el, n, null); return v == null || v === '' ? d : Number(v); };
+
+  function resolvePath(base, target) {
+    if (target.startsWith('/')) return target.slice(1);
+    const parts = base.split('/'); parts.pop();
+    for (const seg of target.split('/')) {
+      if (seg === '..') parts.pop(); else if (seg !== '.') parts.push(seg);
+    }
+    return parts.join('/');
+  }
+  async function readRels(zip, partPath) {
+    const dir = partPath.slice(0, partPath.lastIndexOf('/') + 1), file = partPath.slice(partPath.lastIndexOf('/') + 1);
+    const t = await zip.text(`${dir}_rels/${file}.rels`);
+    const map = {};
+    if (!t) return map;
+    for (const r of parseXml(t).documentElement.children) {
+      map[r.getAttribute('Id')] = { type: r.getAttribute('Type') || '', target: r.getAttribute('TargetMode') === 'External' ? null : resolvePath(partPath, r.getAttribute('Target')) };
+    }
+    return map;
+  }
+
+  /* ---------- colour ---------- */
+  const PRESET = { black: '000000', white: 'FFFFFF', red: 'FF0000', green: '008000', blue: '0000FF', yellow: 'FFFF00', gray: '808080', grey: '808080', orange: 'FFA500', purple: '800080' };
+  const hex2rgb = (h) => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  function rgb2hsl([r, g, b]) {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0, s = 0; const l = (mx + mn) / 2;
+    if (mx !== mn) {
+      const d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6;
+    }
+    return [h, s, l];
+  }
+  function hsl2rgb([h, s, l]) {
+    if (s === 0) return [l * 255, l * 255, l * 255];
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    const f = (t) => { if (t < 0) t += 1; if (t > 1) t -= 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+    return [f(h + 1 / 3) * 255, f(h) * 255, f(h - 1 / 3) * 255];
+  }
+  const COLOR_TAGS = ['srgbClr', 'schemeClr', 'prstClr', 'sysClr'];
+  function colorOf(parent, T, phClr) {
+    const el = parent && [...parent.children].find((c) => COLOR_TAGS.includes(c.localName));
+    if (!el) return null;
+    let rgb = null;
+    const v = attr(el, 'val', '');
+    if (el.localName === 'srgbClr') rgb = hex2rgb(v.padEnd(6, '0'));
+    else if (el.localName === 'prstClr') rgb = hex2rgb(PRESET[v] || '000000');
+    else if (el.localName === 'sysClr') rgb = hex2rgb(attr(el, 'lastClr', v === 'window' ? 'FFFFFF' : '000000'));
+    else if (v === 'phClr') rgb = phClr ? phClr.slice(0, 3) : [0, 0, 0];
+    else { const key = T.clrMap[v] || v; rgb = hex2rgb(T.scheme[key] || '000000'); }
+    let a = 1;
+    for (const m of el.children) {
+      const x = numAttr(m, 'val', 0) / 100000;
+      if (m.localName === 'lumMod' || m.localName === 'lumOff' || m.localName === 'satMod') {
+        const hsl = rgb2hsl(rgb);
+        if (m.localName === 'lumMod') hsl[2] *= x; else if (m.localName === 'lumOff') hsl[2] += x; else hsl[1] *= x;
+        hsl[2] = Math.min(1, Math.max(0, hsl[2])); hsl[1] = Math.min(1, Math.max(0, hsl[1]));
+        rgb = hsl2rgb(hsl);
+      } else if (m.localName === 'tint') rgb = rgb.map((c) => c * x + 255 * (1 - x));
+      else if (m.localName === 'shade') rgb = rgb.map((c) => c * x);
+      else if (m.localName === 'alpha') a = x;
+    }
+    return [Math.round(rgb[0]), Math.round(rgb[1]), Math.round(rgb[2]), a];
+  }
+  const css = (c) => (c ? `rgba(${c[0]},${c[1]},${c[2]},${c[3]})` : null);
+
+  /* ---------- fills and lines ---------- */
+  // Returns { kind:'none' } | { kind:'solid', c } | { kind:'grad', stops, ang } | { kind:'blip', rid } | null (nothing specified)
+  function fillOf(spPr, R, styleEl, rootEl) {
+    const node = spPr || null;
+    if (node) {
+      for (const ch of node.children) {
+        const n = ch.localName;
+        if (n === 'noFill') return { kind: 'none' };
+        if (n === 'solidFill') return { kind: 'solid', c: colorOf(ch, R.T) };
+        if (n === 'gradFill') {
+          const stops = kids(kid(ch, 'gsLst'), 'gs').map((g) => ({ pos: numAttr(g, 'pos', 0) / 100000, c: colorOf(g, R.T) }));
+          const lin = kid(ch, 'lin');
+          return { kind: 'grad', stops, ang: (numAttr(lin, 'ang', 5400000)) / 60000 };
+        }
+        if (n === 'blipFill') { const b = kid(ch, 'blip'); return { kind: 'blip', rid: b ? b.getAttribute('r:embed') : null }; }
+        if (n === 'pattFill') return { kind: 'solid', c: colorOf(kid(ch, 'fgClr'), R.T) };
+      }
+    }
+    const ref = styleEl && kid(styleEl, 'fillRef');
+    if (ref && numAttr(ref, 'idx', 0) > 0) { const c = colorOf(ref, R.T); if (c) return { kind: 'solid', c }; }
+    return null;
+  }
+  function lineOf(spPr, R, styleEl) {
+    const ln = kid(spPr, 'ln');
+    let width = null, c = null, dash = null, none = false;
+    if (ln) {
+      width = numAttr(ln, 'w', null);
+      if (kid(ln, 'noFill')) none = true;
+      const sf = kid(ln, 'solidFill'); if (sf) c = colorOf(sf, R.T);
+      const d = kid(ln, 'prstDash'); if (d && d.getAttribute('val') !== 'solid') dash = d.getAttribute('val');
+    }
+    if (none) return null;
+    const ref = styleEl && kid(styleEl, 'lnRef');
+    if (!c && ref && numAttr(ref, 'idx', 0) > 0) { c = colorOf(ref, R.T); if (width == null) width = 12700; }
+    if (!c) return null;
+    return { c, width: width == null ? 12700 : width, dash };
+  }
+
+  /* ---------- geometry ---------- */
+  function buildPath(ctx, prst, w, h, adj) {
+    ctx.beginPath();
+    switch (prst) {
+      case 'ellipse': ctx.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); break;
+      case 'roundRect': {
+        const r = Math.min(w, h) * (adj != null ? adj / 100000 : 0.16667);
+        ctx.roundRect(0, 0, w, h, r); break;
+      }
+      case 'triangle': ctx.moveTo(w / 2, 0); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); break;
+      case 'rtTriangle': ctx.moveTo(0, 0); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); break;
+      case 'diamond': ctx.moveTo(w / 2, 0); ctx.lineTo(w, h / 2); ctx.lineTo(w / 2, h); ctx.lineTo(0, h / 2); ctx.closePath(); break;
+      case 'parallelogram': { const o = Math.min(w, h) * 0.25; ctx.moveTo(o, 0); ctx.lineTo(w, 0); ctx.lineTo(w - o, h); ctx.lineTo(0, h); ctx.closePath(); break; }
+      case 'rightArrow': { const t = h * 0.25, hd = Math.min(w, h * 0.5); ctx.moveTo(0, t); ctx.lineTo(w - hd, t); ctx.lineTo(w - hd, 0); ctx.lineTo(w, h / 2); ctx.lineTo(w - hd, h); ctx.lineTo(w - hd, h - t); ctx.lineTo(0, h - t); ctx.closePath(); break; }
+      case 'leftArrow': { const t = h * 0.25, hd = Math.min(w, h * 0.5); ctx.moveTo(w, t); ctx.lineTo(hd, t); ctx.lineTo(hd, 0); ctx.lineTo(0, h / 2); ctx.lineTo(hd, h); ctx.lineTo(hd, h - t); ctx.lineTo(w, h - t); ctx.closePath(); break; }
+      case 'line': case 'straightConnector1': ctx.moveTo(0, 0); ctx.lineTo(w, h); break;
+      case 'upArrow': case 'downArrow': {
+        const t = w * 0.25, hd = Math.min(h, w * 0.5), dn = prst === 'downArrow';
+        const pts = [[t, 0], [t, h - hd], [0, h - hd], [w / 2, h], [w, h - hd], [w - t, h - hd], [w - t, 0]];
+        pts.forEach(([x, y], i) => { const yy = dn ? y : h - y; i ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); });
+        ctx.closePath(); break;
+      }
+      case 'star4': case 'star5': case 'star6': case 'star8': case 'star10': case 'star12': {
+        const n = +prst.slice(4), pts = [], inner = n === 4 ? 0.38 : n === 5 ? 0.382 : 0.5;
+        for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + (i * Math.PI) / n, r = i % 2 ? inner : 1; pts.push([w / 2 + Math.cos(a) * r * w / 2, h / 2 + Math.sin(a) * r * h / 2]); }
+        pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); break;
+      }
+      case 'pentagon': case 'hexagon': case 'octagon': case 'heptagon': case 'decagon': case 'dodecagon': {
+        const n = { pentagon: 5, hexagon: 6, heptagon: 7, octagon: 8, decagon: 10, dodecagon: 12 }[prst];
+        const off = prst === 'hexagon' || prst === 'octagon' || prst === 'decagon' || prst === 'dodecagon' ? Math.PI / n : 0;
+        for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + off + (i * 2 * Math.PI) / n, x = w / 2 + Math.cos(a) * w / 2, y = h / 2 + Math.sin(a) * h / 2; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+        ctx.closePath(); break;
+      }
+      case 'trapezoid': { const o = Math.min(w, h) * 0.25; ctx.moveTo(o, 0); ctx.lineTo(w - o, 0); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); break; }
+      case 'homePlate': { const o = Math.min(w, h) * 0.5; ctx.moveTo(0, 0); ctx.lineTo(w - o, 0); ctx.lineTo(w, h / 2); ctx.lineTo(w - o, h); ctx.lineTo(0, h); ctx.closePath(); break; }
+      case 'chevron': { const o = Math.min(w, h) * 0.5; ctx.moveTo(0, 0); ctx.lineTo(w - o, 0); ctx.lineTo(w, h / 2); ctx.lineTo(w - o, h); ctx.lineTo(0, h); ctx.lineTo(o, h / 2); ctx.closePath(); break; }
+      case 'plus': case 'mathPlus': { const a = Math.min(w, h) * 0.33; ctx.moveTo(a, 0); ctx.lineTo(w - a, 0); ctx.lineTo(w - a, a); ctx.lineTo(w, a); ctx.lineTo(w, h - a); ctx.lineTo(w - a, h - a); ctx.lineTo(w - a, h); ctx.lineTo(a, h); ctx.lineTo(a, h - a); ctx.lineTo(0, h - a); ctx.lineTo(0, a); ctx.lineTo(a, a); ctx.closePath(); break; }
+      case 'round2SameRect': { const r = Math.min(w, h) * 0.16667; ctx.roundRect(0, 0, w, h, [r, r, 0, 0]); break; }
+      case 'snip1Rect': { const o = Math.min(w, h) * 0.16667; ctx.moveTo(0, 0); ctx.lineTo(w - o, 0); ctx.lineTo(w, o); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); break; }
+      case 'heart': ctx.moveTo(w / 2, h); ctx.bezierCurveTo(-w * 0.25, h * 0.35, w * 0.2, -h * 0.2, w / 2, h * 0.28); ctx.bezierCurveTo(w * 0.8, -h * 0.2, w * 1.25, h * 0.35, w / 2, h); ctx.closePath(); break;
+      case 'rightBrace': case 'leftBrace': case 'rightBracket': case 'leftBracket': break;
+      case 'wedgeRectCallout': case 'wedgeRoundRectCallout': ctx.roundRect(0, 0, w, h, prst === 'wedgeRectCallout' ? 0 : Math.min(w, h) * 0.16667); break;
+      case 'cloud': ctx.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); break;
+      default: ctx.rect(0, 0, w, h);
+    }
+  }
+  function applyFill(ctx, fill, w, h, R, rels) {
+    if (!fill || fill.kind === 'none') return false;
+    if (fill.kind === 'solid') { if (!fill.c) return false; ctx.fillStyle = css(fill.c); return true; }
+    if (fill.kind === 'grad') {
+      const a = (fill.ang * Math.PI) / 180, cx = w / 2, cy = h / 2;
+      const half = (Math.abs(w * Math.cos(a)) + Math.abs(h * Math.sin(a))) / 2;
+      const g = ctx.createLinearGradient(cx - Math.cos(a) * half, cy - Math.sin(a) * half, cx + Math.cos(a) * half, cy + Math.sin(a) * half);
+      fill.stops.forEach((s) => { if (s.c) g.addColorStop(Math.min(1, Math.max(0, s.pos)), css(s.c)); });
+      ctx.fillStyle = g; return true;
+    }
+    return false;
+  }
+
+  /* ---------- text ---------- */
+  const FONT_FALLBACK = (face) => {
+    const f = (face || 'Calibri').replace(/"/g, '');
+    if (/times|georgia|cambria|garamond|palatino|book|serif$/i.test(f) && !/sans/i.test(f)) return `"${f}", "Times New Roman", serif`;
+    if (/courier|consolas|mono/i.test(f)) return `"${f}", "Courier New", monospace`;
+    return `"${f}", Calibri, Carlito, "Segoe UI", Arial, Helvetica, sans-serif`;
+  };
+  const WING = { '§': '▪', 'Ø': '➢', 'ü': '✓', 'l': '●', 'n': '■', 'q': '❑', 'v': '❖', '·': '•', '': '•' };
+
+  function mergeP(list) {
+    const o = { rpr: [] };
+    for (const el of list) {
+      if (!el) continue;
+      for (const n of ['marL', 'indent']) { const v = numAttr(el, n, null); if (v != null) o[n] = v; }
+      const al = attr(el, 'algn', null); if (al) o.algn = al;
+      for (const ch of el.children) {
+        const n = ch.localName;
+        if (n === 'lnSpc') { const p = kid(ch, 'spcPct'), pt = kid(ch, 'spcPts'); o.lnSpc = p ? { pct: numAttr(p, 'val', 100000) / 100000 } : pt ? { pts: numAttr(pt, 'val', 0) / 100 } : o.lnSpc; }
+        else if (n === 'spcBef' || n === 'spcAft') { const p = kid(ch, 'spcPct'), pt = kid(ch, 'spcPts'); o[n] = p ? { pct: numAttr(p, 'val', 0) / 100000 } : pt ? { pts: numAttr(pt, 'val', 0) / 100 } : o[n]; }
+        else if (n === 'buNone') o.bu = { none: true };
+        else if (n === 'buChar') o.bu = { ch: attr(ch, 'char', '•'), font: o.buFont };
+        else if (n === 'buAutoNum') o.bu = { auto: attr(ch, 'type', 'arabicPeriod'), start: numAttr(ch, 'startAt', 1) };
+        else if (n === 'buFont') { o.buFont = attr(ch, 'typeface', ''); if (o.bu && o.bu.ch != null) o.bu.font = o.buFont; }
+        else if (n === 'buClr') o.buClr = ch;
+        else if (n === 'defRPr') o.rpr.push(ch);
+      }
+    }
+    return o;
+  }
+  function mergeR(list, R) {
+    const o = {};
+    for (const el of list) {
+      if (!el) continue;
+      const sz = numAttr(el, 'sz', null); if (sz != null) o.sz = sz;
+      for (const n of ['b', 'i']) { const v = attr(el, n, null); if (v != null) o[n] = v === '1' || v === 'true'; }
+      const u = attr(el, 'u', null); if (u != null) o.u = u !== 'none';
+      const bl = numAttr(el, 'baseline', null); if (bl != null) o.baseline = bl;
+      const lat = kid(el, 'latin'); if (lat && lat.getAttribute('typeface')) o.face = lat.getAttribute('typeface');
+      const sf = kid(el, 'solidFill'); if (sf) { const c = colorOf(sf, R.T); if (c) o.color = c; }
+    }
+    return o;
+  }
+  const faceName = (f, R) => (!f ? R.T.minor : f === '+mj-lt' ? R.T.major : f === '+mn-lt' ? R.T.minor : f);
+  const autoNum = (type, n) => {
+    const alpha = (x) => String.fromCharCode(96 + ((x - 1) % 26) + 1);
+    const roman = (x) => { const m = [[10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']]; let s = ''; for (const [v, r] of m) while (x >= v) { s += r; x -= v; } return s; };
+    if (/alphaLc/.test(type)) return alpha(n) + (/ParenR/.test(type) ? ')' : '.');
+    if (/alphaUc/.test(type)) return alpha(n).toUpperCase() + (/ParenR/.test(type) ? ')' : '.');
+    if (/romanLc/.test(type)) return roman(n) + '.';
+    if (/romanUc/.test(type)) return roman(n).toUpperCase() + '.';
+    return n + (/ParenR/.test(type) ? ')' : /Plain/.test(type) ? '' : '.');
+  };
+
+  // Draws a text body inside a box (px). `chain` = list of lstStyle elements, lowest priority first. `bodyPrs` = bodyPr elements, lowest first.
+  function drawText(R, txBody, box, chain, bodyPrs, defColor, opts = {}) {
+    const ctx = R.ctx;
+    const paras = kids(txBody, 'p');
+    if (!paras.length) return;
+    const bp = {};
+    let autofit = null;
+    for (const b of bodyPrs) {
+      if (!b) continue;
+      for (const n of ['lIns', 'tIns', 'rIns', 'bIns', 'anchor', 'wrap', 'vert']) { const v = attr(b, n, null); if (v != null) bp[n] = v; }
+      const af = [...b.children].find((c) => ['normAutofit', 'noAutofit', 'spAutoFit'].includes(c.localName));
+      if (af) autofit = af;
+    }
+    const lIns = (bp.lIns != null ? +bp.lIns : opts.insets ? opts.insets[0] : 91440) * R.scale;
+    const tIns = (bp.tIns != null ? +bp.tIns : opts.insets ? opts.insets[1] : 45720) * R.scale;
+    const rIns = (bp.rIns != null ? +bp.rIns : opts.insets ? opts.insets[0] : 91440) * R.scale;
+    const bIns = (bp.bIns != null ? +bp.bIns : opts.insets ? opts.insets[1] : 45720) * R.scale;
+    const innerW = Math.max(1, box.w - lIns - rIns), innerH = box.h - tIns - bIns;
+    const wrap = bp.wrap !== 'none';
+    const pxPt = EMU_PT * R.scale;
+
+    let fontScale = 1;
+    if (autofit && autofit.localName === 'normAutofit') fontScale = numAttr(autofit, 'fontScale', 100000) / 100000;
+
+    function layout(scale) {
+      const out = []; // paragraphs: { lines:[{items,width,h}], before, after, algn, bullet, textX, firstX }
+      const counters = [];
+      for (const p of paras) {
+        const pPr = kid(p, 'pPr');
+        const lvl = numAttr(pPr, 'lvl', 0);
+        const lists = [];
+        for (const ls of chain) lists.push(kid(ls, `lvl${lvl + 1}pPr`));
+        lists.push(pPr);
+        const P = mergeP(lists);
+        const marL = (P.marL || 0) * R.scale, indent = (P.indent || 0) * R.scale;
+        const endRpr = kid(p, 'endParaRPr');
+        const baseR = mergeR([...P.rpr], R);
+        const runs = [];
+        for (const r of p.children) {
+          const n = r.localName;
+          if (n === 'r' || n === 'fld') {
+            const t = kid(r, 't'); const text = t ? t.textContent : '';
+            const rp = mergeR([...P.rpr, kid(r, 'rPr')], R);
+            runs.push({ text, rp });
+          } else if (n === 'br') runs.push({ br: true, rp: mergeR([...P.rpr, kid(r, 'rPr')], R) });
+        }
+        const lastRp = runs.length ? runs[runs.length - 1].rp : mergeR([...P.rpr, endRpr], R);
+        const fontPx = (rp) => ((rp.sz || baseR.sz || 1800) / 100) * pxPt * scale;
+        const setFont = (rp) => {
+          const px = fontPx(rp);
+          ctx.font = `${rp.i ? 'italic ' : ''}${(rp.b || R.forceBold) ? 'bold ' : ''}${Math.max(1, px)}px ${FONT_FALLBACK(faceName(rp.face || baseR.face, R))}`;
+          return px;
+        };
+        // bullet
+        let bullet = null;
+        if (P.bu && !P.bu.none && runs.some((x) => x.text && x.text.trim())) {
+          if (P.bu.auto) {
+            counters.length = lvl + 1; counters[lvl] = (counters[lvl] == null ? P.bu.start || 1 : counters[lvl] + 1);
+            bullet = autoNum(P.bu.auto, counters[lvl]);
+          } else {
+            let ch = P.bu.ch || '•';
+            if (/wingdings|symbol/i.test(P.bu.font || '')) ch = WING[ch] || '•';
+            bullet = ch;
+          }
+        } else { counters.length = Math.min(counters.length, lvl); }
+        const textX = bullet ? marL : marL + indent;
+        const restX = marL;
+        const bulletX = marL + indent;
+        // tokens
+        const tokens = [];
+        for (const r of runs) {
+          if (r.br) { tokens.push({ br: true, rp: r.rp }); continue; }
+          const parts = r.text.split(/(\s+)/).filter((s) => s !== '');
+          for (const part of parts) tokens.push({ text: part, rp: r.rp, space: /^\s+$/.test(part) });
+        }
+        if (!tokens.length) tokens.push({ text: '', rp: lastRp, empty: true });
+        const lines = [];
+        let cur = { items: [], width: 0, maxPx: 0 };
+        const startX = () => (lines.length === 0 ? textX : restX);
+        const push = (force) => { lines.push(cur); cur = { items: [], width: 0, maxPx: 0 }; };
+        for (const tk of tokens) {
+          if (tk.br) { cur.maxPx = Math.max(cur.maxPx, fontPx(tk.rp)); push(); continue; }
+          const px = setFont(tk.rp);
+          const w = tk.text ? ctx.measureText(tk.text).width : 0;
+          const avail = innerW - startX();
+          if (wrap && !tk.space && cur.width + w > avail && cur.items.length) { push(); }
+          if (tk.space && !cur.items.length && lines.length) continue;   // no leading space after a wrap
+          cur.items.push({ text: tk.text, rp: tk.rp, w, px });
+          cur.width += w; cur.maxPx = Math.max(cur.maxPx, px);
+        }
+        push();
+        const ln = P.lnSpc;
+        for (const l of lines) {
+          const mp = l.maxPx || fontPx(lastRp);
+          l.h = mp * 1.2 * (ln && ln.pct ? ln.pct : 1) + (ln && ln.pts ? 0 : 0);
+          if (ln && ln.pts) l.h = ln.pts * pxPt * scale;
+          l.px = mp;
+          // trim trailing spaces from width
+          while (l.items.length && l.items[l.items.length - 1].text.trim() === '' && l.items.length > 1) { l.width -= l.items[l.items.length - 1].w; l.items.pop(); }
+        }
+        const sp = (s, ref) => (!s ? 0 : s.pts != null ? s.pts * pxPt * scale : (s.pct || 0) * ref);
+        const firstPx = lines[0].px || 16;
+        out.push({ lines, algn: P.algn || 'l', before: sp(P.spcBef, firstPx * 1.2), after: sp(P.spcAft, firstPx * 1.2), bullet, bulletX, textX, restX, bulletRp: lines[0].items[0] ? lines[0].items[0].rp : lastRp, baseR });
+      }
+      return out;
+    }
+    const totalH = (o) => o.reduce((s, p, i) => s + (i ? p.before : 0) + p.lines.reduce((a, l) => a + l.h, 0) + p.after, 0);
+
+    let scale = fontScale, laid = layout(scale);
+    if (autofit && autofit.localName === 'normAutofit') {
+      let guard = 0;
+      while (totalH(laid) > innerH + 1 && scale > 0.4 && guard++ < 12) { scale *= 0.94; laid = layout(scale); }
+    }
+    const H = totalH(laid);
+    const anchor = bp.anchor || 't';
+    let y = box.y + tIns + (anchor === 'ctr' ? (innerH - H) / 2 : anchor === 'b' ? innerH - H : 0);
+    laid.forEach((p, pi) => {
+      if (pi) y += p.before;
+      p.lines.forEach((l, li) => {
+        const sx = li === 0 ? p.textX : p.restX;
+        const avail = innerW - sx;
+        let x = box.x + lIns + sx;
+        if (p.algn === 'ctr') x += (avail - l.width) / 2; else if (p.algn === 'r') x += avail - l.width;
+        const base = y + l.h * 0.5 + l.px * 0.33;     // baseline roughly in the middle of the line's box
+        if (li === 0 && p.bullet) {
+          const rp = p.bulletRp || {};
+          ctx.font = `${Math.max(1, l.px)}px ${FONT_FALLBACK(faceName(null, R))}`;
+          ctx.fillStyle = css(rp.color || defColor) || '#000';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(p.bullet, box.x + lIns + p.bulletX, base);
+        }
+        for (const it of l.items) {
+          const rp = it.rp;
+          ctx.font = `${rp.i ? 'italic ' : ''}${(rp.b || R.forceBold) ? 'bold ' : ''}${Math.max(1, it.px)}px ${FONT_FALLBACK(faceName(rp.face || p.baseR.face, R))}`;
+          ctx.fillStyle = css(R.forceColor || rp.color || p.baseR.color || defColor) || '#000';
+          ctx.textBaseline = 'alphabetic';
+          let yy = base;
+          if (rp.baseline) yy -= it.px * (rp.baseline > 0 ? 0.35 : -0.15);
+          ctx.fillText(it.text, x, yy);
+          if (rp.u && it.text.trim()) { ctx.fillRect(x, yy + it.px * 0.1, it.w, Math.max(1, it.px / 14)); }
+          x += it.w;
+        }
+        y += l.h;
+      });
+      y += p.after;
+    });
+  }
+
+  /* ---------- placeholders ---------- */
+  const TITLE_TYPES = ['title', 'ctrTitle'];
+  function phInfo(sp) {
+    const ph = at(sp, 'nvSpPr', 'nvPr', 'ph');
+    return ph ? { type: attr(ph, 'type', 'obj'), idx: attr(ph, 'idx', null) } : null;
+  }
+  function findPh(tree, ph) {
+    if (!tree || !ph) return null;
+    const cands = kids(tree, 'sp').filter((s) => phInfo(s));
+    let m = null;
+    if (ph.idx != null) m = cands.find((s) => phInfo(s).idx === ph.idx);
+    if (!m) m = cands.find((s) => { const t = phInfo(s).type; return t === ph.type || (TITLE_TYPES.includes(t) && TITLE_TYPES.includes(ph.type)); });
+    if (!m && !['title', 'ctrTitle', 'dt', 'ftr', 'sldNum'].includes(ph.type)) m = cands.find((s) => ['body', 'obj'].includes(phInfo(s).type));
+    return m || null;
+  }
+  const xfrmOf = (spPr) => kid(spPr, 'xfrm') || null;
+
+  /* ---------- main drawing ---------- */
+  async function drawTree(R, tree, M, part, inherit) {
+    for (const node of tree.children) {
+      const n = node.localName;
+      if (n === 'grpSp') {
+        const xf = at(node, 'grpSpPr', 'xfrm');
+        let M2 = M;
+        if (xf) {
+          const off = kid(xf, 'off'), ext = kid(xf, 'ext'), co = kid(xf, 'chOff'), ce = kid(xf, 'chExt');
+          const cx = numAttr(ext, 'cx', 1), cy = numAttr(ext, 'cy', 1), cex = numAttr(ce, 'cx', cx) || 1, cey = numAttr(ce, 'cy', cy) || 1;
+          const kx = cx / cex, ky = cy / cey;
+          M2 = { sx: M.sx * kx, sy: M.sy * ky, tx: M.sx * (numAttr(off, 'x', 0) - numAttr(co, 'x', 0) * kx) + M.tx, ty: M.sy * (numAttr(off, 'y', 0) - numAttr(co, 'y', 0) * ky) + M.ty };
+        }
+        await drawTree(R, node, M2, part, inherit);
+      } else if (n === 'sp' || n === 'cxnSp') await drawSp(R, node, M, part, inherit);
+      else if (n === 'pic') await drawPic(R, node, M, part);
+      else if (n === 'graphicFrame') await drawFrame(R, node, M, part, inherit);
+    }
+  }
+  function boxFrom(xf, M, R) {
+    const off = kid(xf, 'off'), ext = kid(xf, 'ext');
+    if (!off || !ext) return null;
+    return {
+      x: (M.sx * numAttr(off, 'x', 0) + M.tx) * R.scale, y: (M.sy * numAttr(off, 'y', 0) + M.ty) * R.scale,
+      w: M.sx * numAttr(ext, 'cx', 0) * R.scale, h: M.sy * numAttr(ext, 'cy', 0) * R.scale,
+      rot: numAttr(xf, 'rot', 0) / 60000, flipH: attr(xf, 'flipH', '0') === '1', flipV: attr(xf, 'flipV', '0') === '1'
+    };
+  }
+  function enter(ctx, b) {
+    ctx.save();
+    ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
+    if (b.rot) ctx.rotate((b.rot * Math.PI) / 180);
+  }
+  async function loadImage(R, rels, rid, notes) {
+    const rel = rels && rels[rid];
+    if (!rel || !rel.target) return null;
+    if (R.imgCache.has(rel.target)) return R.imgCache.get(rel.target);
+    let bmp = null;
+    try {
+      const data = await R.zip.get(rel.target);
+      if (data) {
+        const ext = rel.target.split('.').pop().toLowerCase();
+        if (['emf', 'wmf', 'svg'].includes(ext)) R.notes.add('pictures in a format that can’t be shown (' + ext.toUpperCase() + ')');
+        else bmp = await createImageBitmap(new Blob([data], { type: ext === 'jpg' ? 'image/jpeg' : 'image/' + ext }));
+      }
+    } catch (_) { R.notes.add('a picture that could not be read'); }
+    R.imgCache.set(rel.target, bmp);
+    return bmp;
+  }
+
+  async function drawSp(R, sp, M, part, inherit) {
+    const ctx = R.ctx;
+    const spPr = kid(sp, 'spPr'), style = kid(sp, 'style');
+    const ph = phInfo(sp);
+    let layoutPh = null, masterPh = null;
+    if (ph && inherit.layoutTree) layoutPh = findPh(inherit.layoutTree, ph);
+    if (ph && inherit.masterTree) masterPh = findPh(inherit.masterTree, layoutPh ? phInfo(layoutPh) : ph);
+    let xf = xfrmOf(spPr) || (layoutPh && xfrmOf(kid(layoutPh, 'spPr'))) || (masterPh && xfrmOf(kid(masterPh, 'spPr')));
+    const b = xf && boxFrom(xf, ph && !xfrmOf(spPr) ? { sx: 1, sy: 1, tx: 0, ty: 0 } : M, R);
+    if (!b || b.w < 0 || b.h < 0) return;
+    const prstEl = at(spPr, 'prstGeom');
+    const prst = prstEl ? attr(prstEl, 'prst', 'rect') : sp.localName === 'cxnSp' ? 'line' : kid(spPr, 'custGeom') ? 'rect' : 'rect';
+    const adj = (() => { const g = at(prstEl, 'avLst', 'gd'); return g ? Number((g.getAttribute('fmla') || '').replace('val ', '')) : null; })();
+    const isLine = prst === 'line' || prst === 'straightConnector1';
+    const fill = isLine ? null : fillOf(spPr, R, style);
+    const ln = lineOf(spPr, R, style);
+
+    enter(ctx, b);
+    ctx.save();
+    ctx.scale(b.flipH ? -1 : 1, b.flipV ? -1 : 1);
+    ctx.translate(-b.w / 2, -b.h / 2);
+    buildPath(ctx, prst, b.w, b.h, adj);
+    if (fill && fill.kind === 'blip') {
+      const bmp = await loadImage(R, part.rels, fill.rid);
+      if (bmp) { ctx.save(); ctx.clip(); const k = Math.max(b.w / bmp.width, b.h / bmp.height); ctx.drawImage(bmp, (b.w - bmp.width * k) / 2, (b.h - bmp.height * k) / 2, bmp.width * k, bmp.height * k); ctx.restore(); }
+    } else if (applyFill(ctx, fill, b.w, b.h, R)) ctx.fill();
+    if (ln) {
+      buildPath(ctx, prst, b.w, b.h, adj);
+      ctx.lineWidth = Math.max(0.75, ln.width * R.scale);
+      ctx.strokeStyle = css(ln.c);
+      const dash = { dash: [4, 3], sysDash: [3, 1], dot: [1, 2], sysDot: [1, 1], lgDash: [8, 3] }[ln.dash];
+      ctx.setLineDash(dash ? dash.map((d) => d * ctx.lineWidth) : []);
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+
+    const tx = kid(sp, 'txBody');
+    if (tx && (kids(tx, 'p').some((p) => kids(p, 'r').length || kids(p, 'fld').length))) {
+      const isTitle = ph && TITLE_TYPES.includes(ph.type);
+      const master = inherit.masterStyles;
+      const styleKind = ph ? (isTitle ? master.title : master.body) : master.other;
+      const chain = [inherit.presDefault, styleKind, masterPh && kid(kid(masterPh, 'txBody'), 'lstStyle'), layoutPh && kid(kid(layoutPh, 'txBody'), 'lstStyle'), kid(tx, 'lstStyle')].filter(Boolean);
+      const bodyPrs = [masterPh && kid(kid(masterPh, 'txBody'), 'bodyPr'), layoutPh && kid(kid(layoutPh, 'txBody'), 'bodyPr'), kid(tx, 'bodyPr')];
+      const fontRef = style && kid(style, 'fontRef');
+      const defColor = (fontRef && colorOf(fontRef, R.T)) || (() => { const c = hex2rgb(R.T.scheme[R.T.clrMap.tx1 || 'tx1'] || '000000'); return [c[0], c[1], c[2], 1]; })();
+      ctx.save();
+      ctx.translate(-b.w / 2, -b.h / 2);
+      drawText(R, tx, { x: 0, y: 0, w: b.w, h: b.h }, chain, bodyPrs, defColor);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  async function drawPic(R, pic, M, part) {
+    const ctx = R.ctx;
+    const spPr = kid(pic, 'spPr');
+    const b = boxFrom(xfrmOf(spPr), M, R);
+    if (!b) return;
+    const blipFill = kid(pic, 'blipFill');
+    const blip = kid(blipFill, 'blip');
+    const bmp = blip ? await loadImage(R, part.rels, blip.getAttribute('r:embed')) : null;
+    if (!bmp) return;
+    const sr = kid(blipFill, 'srcRect');
+    const l = numAttr(sr, 'l', 0) / 100000, t = numAttr(sr, 't', 0) / 100000, r = numAttr(sr, 'r', 0) / 100000, bt = numAttr(sr, 'b', 0) / 100000;
+    enter(ctx, b);
+    ctx.scale(b.flipH ? -1 : 1, b.flipV ? -1 : 1);
+    ctx.translate(-b.w / 2, -b.h / 2);
+    const prst = attr(at(spPr, 'prstGeom'), 'prst', 'rect');
+    if (prst === 'ellipse' || prst === 'roundRect') { buildPath(ctx, prst, b.w, b.h, null); ctx.clip(); }
+    ctx.drawImage(bmp, bmp.width * l, bmp.height * t, bmp.width * (1 - l - r), bmp.height * (1 - t - bt), 0, 0, b.w, b.h);
+    ctx.restore();
+  }
+
+  async function drawFrame(R, gf, M, part, inherit) {
+    const ctx = R.ctx;
+    const xf = kid(gf, 'xfrm');
+    const b = boxFrom(xf, M, R);
+    if (!b) return;
+    const tbl = at(kid(gf, 'graphic'), 'graphicData', 'tbl');
+    if (!tbl) {
+      const isChart = !!gf.getElementsByTagNameNS('*', 'chart').length;
+      R.notes.add(isChart ? 'charts' : 'diagrams or other embedded objects');
+      ctx.save(); ctx.fillStyle = 'rgba(120,120,160,0.10)'; ctx.strokeStyle = 'rgba(120,120,160,0.55)'; ctx.setLineDash([8, 6]); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 10); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = 'rgba(80,80,120,0.8)'; ctx.font = `${Math.max(14, b.h * 0.08)}px Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(isChart ? '(chart not shown)' : '(object not shown)', b.x + b.w / 2, b.y + b.h / 2); ctx.restore();
+      return;
+    }
+    const cols = kids(kid(tbl, 'tblGrid'), 'gridCol').map((g) => numAttr(g, 'w', 0) * M.sx * R.scale);
+    const tblPr = kid(tbl, 'tblPr');
+    const firstRow = attr(tblPr, 'firstRow', '0') === '1', bandRow = attr(tblPr, 'bandRow', '0') === '1';
+    const rows = kids(tbl, 'tr');
+    const accent = R.T.scheme.accent1 ? hex2rgb(R.T.scheme.accent1) : [68, 114, 196];
+    let y = b.y;
+    rows.forEach((tr, ri) => {
+      const rh = numAttr(tr, 'h', 370840) * M.sy * R.scale;
+      let x = b.x, ci = 0;
+      for (const tc of kids(tr, 'tc')) {
+        const span = numAttr(tc, 'gridSpan', 1);
+        if (attr(tc, 'hMerge', '0') === '1' || attr(tc, 'vMerge', '0') === '1') { x += cols[ci] || 0; ci += 1; continue; }
+        let cw = 0; for (let k = 0; k < span; k++) cw += cols[ci + k] || 0;
+        const tcPr = kid(tc, 'tcPr');
+        let fill = fillOf(tcPr, R, null);
+        let textColor = null, bold = false;
+        if (!fill) {
+          if (firstRow && ri === 0) { fill = { kind: 'solid', c: [...accent, 1] }; textColor = [255, 255, 255, 1]; bold = true; }
+          else if (bandRow) { const t = (firstRow ? ri : ri + 1) % 2 === 1 ? 0.4 : 0.2; fill = { kind: 'solid', c: [...accent.map((c) => c * t + 255 * (1 - t)), 1].map((v, i) => (i < 3 ? Math.round(v) : v)) }; }
+        }
+        if (fill && fill.kind === 'solid' && fill.c) { ctx.fillStyle = css(fill.c); ctx.fillRect(x, y, cw, rh); }
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = Math.max(1, 12700 * R.scale); ctx.strokeRect(x, y, cw, rh);
+        const tx = kid(tc, 'txBody');
+        if (tx) {
+          const chain = [inherit.presDefault, inherit.masterStyles.other, kid(tx, 'lstStyle')].filter(Boolean);
+          const defC = textColor || [0, 0, 0, 1];
+          const saved = R.forceBold, savedC = R.forceColor; R.forceBold = bold; R.forceColor = textColor;
+          drawText(R, tx, { x, y, w: cw, h: rh }, chain, [kid(tx, 'bodyPr')], defC, { insets: [91440, 45720] });
+          R.forceBold = saved; R.forceColor = savedC;
+        }
+        x += cw; ci += span;
+      }
+      y += rh;
+    });
+  }
+
+  /* ---------- slides ---------- */
+  async function render(buffer, options = {}) {
+    const width = options.width || 1920;
+    const zip = await readZip(buffer);
+    const presXml = await zip.text('ppt/presentation.xml');
+    if (!presXml) throw new Error('This does not look like a PowerPoint (.pptx) file.');
+    const pres = parseXml(presXml).documentElement;
+    const sz = kid(pres, 'sldSz');
+    const slideW = numAttr(sz, 'cx', 9144000), slideH = numAttr(sz, 'cy', 6858000);
+    const scale = width / slideW;
+    const height = Math.round(slideH * scale);
+    const presRels = await readRels(zip, 'ppt/presentation.xml');
+    const presDefault = kid(pres, 'defaultTextStyle');
+    const slideIds = kids(kid(pres, 'sldIdLst'), 'sldId').map((s) => presRels[s.getAttribute('r:id')]).filter((r) => r && r.target);
+
+    const notes = new Set();
+    const canvases = [];
+    const imgCache = new Map();
+    const masterCache = new Map();
+
+    async function loadMaster(path) {
+      if (masterCache.has(path)) return masterCache.get(path);
+      const root = parseXml(await zip.text(path)).documentElement;
+      const rels = await readRels(zip, path);
+      const themeRel = Object.values(rels).find((r) => /theme$/.test(r.type));
+      const T = { scheme: {}, clrMap: { bg1: 'lt1', tx1: 'dk1', bg2: 'lt2', tx2: 'dk2' }, major: 'Calibri', minor: 'Calibri' };
+      if (themeRel) {
+        const th = parseXml(await zip.text(themeRel.target)).documentElement;
+        const cs = at(th, 'themeElements', 'clrScheme');
+        for (const c of (cs ? cs.children : [])) {
+          const inner = c.children[0];
+          T.scheme[c.localName] = inner ? (inner.localName === 'sysClr' ? attr(inner, 'lastClr', 'FFFFFF') : attr(inner, 'val', '000000')) : '000000';
+        }
+        const fs = at(th, 'themeElements', 'fontScheme');
+        T.major = attr(at(fs, 'majorFont', 'latin'), 'typeface', 'Calibri'); T.minor = attr(at(fs, 'minorFont', 'latin'), 'typeface', 'Calibri');
+      }
+      const cm = kid(root, 'clrMap');
+      if (cm) for (const a of cm.attributes) T.clrMap[a.name] = a.value;
+      const ts = kid(root, 'txStyles');
+      const m = { root, rels, T, tree: at(root, 'cSld', 'spTree'), styles: { title: kid(ts, 'titleStyle'), body: kid(ts, 'bodyStyle'), other: kid(ts, 'otherStyle') } };
+      masterCache.set(path, m);
+      return m;
+    }
+
+    async function paintBackground(R, bgEl, part) {
+      const ctx = R.ctx;
+      const bgPr = kid(bgEl, 'bgPr'), bgRef = kid(bgEl, 'bgRef');
+      let fill = null;
+      if (bgPr) fill = fillOf(bgPr, R, null);
+      else if (bgRef) { const c = colorOf(bgRef, R.T); if (c) fill = { kind: 'solid', c }; }
+      if (!fill) return false;
+      if (fill.kind === 'blip') {
+        const bmp = await loadImage(R, part.rels, fill.rid);
+        if (bmp) { ctx.drawImage(bmp, 0, 0, width, height); return true; }
+        return false;
+      }
+      if (applyFill(ctx, fill, width, height, R)) { ctx.fillRect(0, 0, width, height); return true; }
+      return false;
+    }
+
+    let done = 0;
+    for (const sl of slideIds) {
+      const slideRoot = parseXml(await zip.text(sl.target)).documentElement;
+      if (attr(slideRoot, 'show', '1') === '0') continue;
+      const slideRels = await readRels(zip, sl.target);
+      const layRel = Object.values(slideRels).find((r) => /slideLayout$/.test(r.type));
+      const layRoot = layRel ? parseXml(await zip.text(layRel.target)).documentElement : null;
+      const layRels = layRel ? await readRels(zip, layRel.target) : {};
+      const masRel = Object.values(layRels).find((r) => /slideMaster$/.test(r.type));
+      const master = masRel ? await loadMaster(masRel.target) : null;
+      if (!master) throw new Error('This presentation is missing its master slide.');
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
+      const R = { ctx, scale, T: master.T, zip, notes, imgCache };
+      const inherit = { presDefault, masterStyles: master.styles, masterTree: master.tree, layoutTree: layRoot ? at(layRoot, 'cSld', 'spTree') : null };
+      const ID = { sx: 1, sy: 1, tx: 0, ty: 0 };
+
+      // background: slide, else layout, else master
+      const slidePart = { rels: slideRels }, layPart = { rels: layRels }, masPart = { rels: master.rels };
+      let painted = await paintBackground(R, at(slideRoot, 'cSld', 'bg'), slidePart);
+      if (!painted && layRoot) painted = await paintBackground(R, at(layRoot, 'cSld', 'bg'), layPart);
+      if (!painted) await paintBackground(R, at(master.root, 'cSld', 'bg'), masPart);
+
+      // shapes from master and layout that aren't placeholders (logos, decoration)
+      const nonPh = (tree) => { const c = tree.cloneNode(false); [...tree.children].forEach((ch) => { if (!(ch.localName === 'sp' && phInfo(ch))) c.appendChild(ch.cloneNode(true)); }); return c; };
+      const hideMaster = attr(slideRoot, 'showMasterSp', '1') === '0' || (layRoot && attr(layRoot, 'showMasterSp', '1') === '0');
+      if (!hideMaster && master.tree) await drawTree(R, nonPh(master.tree), ID, masPart, { presDefault, masterStyles: master.styles });
+      if (layRoot && attr(slideRoot, 'showMasterSp', '1') !== '0') await drawTree(R, nonPh(at(layRoot, 'cSld', 'spTree')), ID, layPart, { presDefault, masterStyles: master.styles });
+
+      await drawTree(R, at(slideRoot, 'cSld', 'spTree'), ID, slidePart, inherit);
+      canvases.push(canvas);
+      done++;
+      if (options.onProgress) options.onProgress(done, slideIds.length);
+      await new Promise((r) => setTimeout(r, 0));   // let the page breathe
+    }
+    if (!canvases.length) throw new Error('No slides were found in this file.');
+    return { canvases, notes: [...notes] };
+  }
+
+  window.PptxConvert = { render };
+})();
+
+  </script>
+  <script type="module">
+    // Lets the page be installed as an app (Edge: ... menu > Apps > Install this site as an app)
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update, set, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAa-5f4Tkiw840rV2B7WKTz7-1f-9YFJa0",
+      authDomain: "classfocus.firebaseapp.com",
+      databaseURL: "https://classfocus-default-rtdb.firebaseio.com",
+      projectId: "classfocus",
+      storageBucket: "classfocus.firebasestorage.app",
+      messagingSenderId: "353877697764",
+      appId: "1:353877697764:web:56d66de988624e4b82f8f1",
+      measurementId: "G-K2N3N8J80Z"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    /* =====================================================
+       CLASSES
+       A class is a name plus a permanent 6-character code. The list of
+       classes is remembered in this browser (there are no teacher logins),
+       and each class's data lives in the database under classes/<CODE>/,
+       so teachers sharing this page never see each other's data.
+       The code never changes; only the lesson data is cleared each day.
+       No look-alike characters (0/O, 1/I) so codes are easy to read out.
+       ===================================================== */
+    const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const CODE_RE = /^[A-HJ-NP-Z2-9]{6}$/;
+    function genCode() {
+      const a = new Uint32Array(6);
+      crypto.getRandomValues(a);
+      return Array.from(a, (n) => CODE_ALPHABET[n % CODE_ALPHABET.length]).join('');
+    }
+
+    const LS_CLASSES = 'cf_classes', LS_ACTIVE = 'cf_active_class';
+    const lsGet = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+    const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+
+    function loadClasses() {
+      const raw = lsGet(LS_CLASSES);
+      if (raw !== null) {
+        try {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list)) {
+            return list
+              .filter((c) => c && CODE_RE.test(c.code) && typeof c.name === 'string' && c.name.trim())
+              .map((c) => ({ code: c.code, name: c.name.slice(0, 30) }));
+          }
+        } catch (_) {}
+        return [];
+      }
+      // Coming from the earlier single-code version: keep that class and its code so nobody has to rejoin
+      const legacy = lsGet('cf_class_code');
+      return legacy && CODE_RE.test(legacy) ? [{ code: legacy, name: 'My class' }] : [];
+    }
+
+    let classes = loadClasses();   // [{ code, name }]
+    let classCode = null;          // the class that's live right now
+    const saveClasses = () => { lsSet(LS_CLASSES, JSON.stringify(classes)); lsSet(LS_ACTIVE, classCode || ''); };
+    const currentClass = () => classes.find((c) => c.code === classCode) || null;
+    const cp = (path) => ref(db, `classes/${classCode}/${path}`);
+    const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
+
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    /* =====================================================
+       EMOJI PICKER (stable per name, so a student keeps theirs)
+       ===================================================== */
+    function hashString(str) {
+      let h = 2166136261;
+      for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+      return h >>> 0;
+    }
+    const EMOJIS = ['🦊','🐼','🐸','🦄','🐙','🦁','🐯','🐨','🐵','🐧','🦉','🐢','🦖','🐳','🦋','🐝','🐞','🦀','🐬','🦒','🐘','🦓','🐰','🐻','🐷','🐮','🐔','🦆','🦜','🐠','🦈','🐊','🦔','🦦','🦥','🐲','👽','🤖','👾','🎃','⚡','🔥','🌈','🍕','🍩','🍉','🍓','🚀','🛸','⚽','🏀','🎸','🎨','🧁','🍔','🌮','🪐','🌵','🍄','💎'];
+    // Main colour of each emoji (hue in degrees). A pill takes its emoji's colour, nudged a little per student.
+    const EMOJI_HUE = {
+      '🦊':24,'🐼':215,'🐸':120,'🦄':290,'🐙':340,'🦁':40,'🐯':30,'🐨':210,'🐵':28,'🐧':205,'🦉':32,'🐢':140,
+      '🦖':150,'🐳':210,'🦋':200,'🐝':48,'🐞':5,'🦀':8,'🐬':198,'🦒':42,'🐘':215,'🦓':235,'🐰':330,'🐻':25,
+      '🐷':345,'🐮':195,'🐔':10,'🦆':55,'🦜':130,'🐠':35,'🦈':205,'🐊':125,'🦔':30,'🦦':28,'🦥':40,'🐲':135,
+      '👽':105,'🤖':215,'👾':275,'🎃':28,'⚡':50,'🔥':15,'🌈':300,'🍕':35,'🍩':335,'🍉':350,'🍓':355,'🚀':220,
+      '🛸':170,'⚽':230,'🏀':24,'🎸':18,'🎨':265,'🧁':320,'🍔':32,'🌮':45,'🪐':285,'🌵':125,'🍄':5,'💎':195
+    };
+    // Soft [fill, border] for a student: same hue family as their emoji, with their own small shift in
+    // hue, saturation and lightness so no two pills are exactly alike.
+    function pillColors(name, emoji) {
+      const key = String(name).toLowerCase().trim();
+      const h2 = hashString(key + '#shade');
+      const base = EMOJI_HUE[emoji] ?? (hashString(key) % 360);
+      const hue = (base + ((h2 & 31) - 15) + 360) % 360;        // ±15° around the emoji's colour
+      const sat = 62 + ((h2 >>> 5) & 31);                         // 62–93%
+      const light = 87 + ((h2 >>> 10) & 7);                       // 87–94%
+      return [`hsl(${hue} ${sat}% ${light}%)`, `hsl(${hue} ${Math.max(40, sat - 14)}% ${light - 13}%)`];
+    }
+    function pickEmoji(name) {
+      return EMOJIS[hashString(String(name).toLowerCase().trim() || '?') % EMOJIS.length];
+    }
+
+    /* =====================================================
+       SOUND
+       ===================================================== */
+    let soundEnabled = true;
+    const soundBtn = document.getElementById('sound-btn');
+    const soundBanner = document.getElementById('sound-alert-banner');
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioCtor();
+
+    const showBanner = () => { if (soundEnabled) soundBanner.style.display = 'flex'; };
+    const hideBanner = () => { soundBanner.style.display = 'none'; };
+
+    audioCtx.addEventListener('statechange', () => {
+      if (audioCtx.state === 'running') hideBanner();
+    });
+
+    ['pointerdown', 'keydown', 'touchstart'].forEach((ev) => {
+      window.addEventListener(ev, () => {
+        if (audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
+      }, { passive: true });
+    });
+
+    window.toggleSound = function () {
+      soundEnabled = !soundEnabled;
+      soundBtn.classList.toggle('muted', !soundEnabled);
+      soundBtn.innerHTML = soundEnabled
+        ? '🔊 <span class="long">Sound on</span><span class="short">On</span>'
+        : '🔇 <span class="long">Sound off</span><span class="short">Off</span>';
+      if (soundEnabled) {
+        audioCtx.resume().catch(() => {});
+      } else {
+        hideBanner();
+      }
+    };
+
+    window.unlockAndTestAudio = function () {
+      audioCtx.resume().then(() => {
+        if (audioCtx.state === 'running') { hideBanner(); playSound('award'); }
+      }).catch(() => {});
+    };
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      if (audioCtx.state === 'running') return doPlay(type);
+      audioCtx.resume().then(() => {
+        if (audioCtx.state === 'running') doPlay(type); else showBanner();
+      }).catch(showBanner);
+    }
+
+    let fx = null;
+    function getFx() {
+      if (fx) return fx;
+      const master = audioCtx.createGain();
+      master.gain.value = 0.9;
+      master.connect(audioCtx.destination);
+      const delay = audioCtx.createDelay();
+      delay.delayTime.value = 0.2;
+      const feedback = audioCtx.createGain();
+      feedback.gain.value = 0.32;
+      const wet = audioCtx.createGain();
+      wet.gain.value = 0.35;
+      delay.connect(feedback); feedback.connect(delay);
+      delay.connect(wet); wet.connect(master);
+      fx = { master, delay };
+      return fx;
+    }
+
+    function bell(freq, t, vol = 0.16, dur = 1.2) {
+      const { master, delay } = getFx();
+      const env = audioCtx.createGain();
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      env.connect(master); env.connect(delay);
+      [[1, 1], [2, 0.28], [3, 0.08]].forEach(([mult, amp]) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.value = freq * mult;
+        g.gain.value = amp;
+        o.connect(g); g.connect(env);
+        o.start(t); o.stop(t + dur + 0.05);
+      });
+    }
+
+    function buzz(freq, t, dur, endFreq) {
+      const { master } = getFx();
+      const o = audioCtx.createOscillator();
+      const filter = audioCtx.createBiquadFilter();
+      const env = audioCtx.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(freq, t);
+      if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t + dur);
+      filter.type = 'lowpass';
+      filter.frequency.value = 1300;
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.exponentialRampToValueAtTime(0.2, t + 0.015);
+      env.gain.setValueAtTime(0.2, t + dur * 0.6);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(filter); filter.connect(env); env.connect(master);
+      o.start(t); o.stop(t + dur + 0.02);
+    }
+
+    function doPlay(type) {
+      const now = audioCtx.currentTime;
+      if (type === 'inactive') {
+        [0, 0.65].forEach((offset) => {
+          buzz(392, now + offset, 0.16);
+          buzz(293.66, now + offset + 0.2, 0.34, 270);
+        });
+      } else if (type === 'timer') {
+        [0, 0.9].forEach((o) => {
+          [783.99, 659.25, 523.25].forEach((f, i) => bell(f, now + o + i * 0.2, 0.18, 1.3));
+        });
+      } else if (type === 'award') {
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => bell(freq, now + i * 0.085, 0.16, 1.2));
+        bell(1568, now + 0.4, 0.07, 1.0);
+      }
+    }
+
+    /* =====================================================
+       PDF VIEWER (fit to width, zoom, drag-to-pan)
+       ===================================================== */
+    let pdfDoc = null, pageNum = 1, pageRendering = false, pendingRender = null;
+    const canvas = document.getElementById('pdf-render');
+    const ctx = canvas.getContext('2d');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    const canvasContainer = document.getElementById('canvas-container');
+    const zoomDisplay = document.getElementById('zoom-display');
+    const emptyState = document.getElementById('empty-state');
+    let isSoloWork = false;
+
+    let zoom = 1.0;
+    const MIN_ZOOM = 0.4, MAX_ZOOM = 5;
+    let fitScale = 1;
+    let pageBase = null;
+    let zoomTimer = null;
+
+    function updateZoomLabel() { zoomDisplay.textContent = `${Math.round(zoom * 100)}%`; }
+
+    const pageLabel = document.getElementById('page-label');
+    const pageControls = document.getElementById('page-controls');
+    const pageInput = document.getElementById('page-input');
+    const pageTotal = document.getElementById('page-total');
+
+    function updatePageUI(num) {
+      pageLabel.style.display = 'none';
+      pageControls.style.display = 'inline';
+      pageTotal.textContent = pdfDoc.numPages;
+      pageInput.max = pdfDoc.numPages;
+      if (document.activeElement !== pageInput) pageInput.value = num;
+    }
+
+    window.goToPage = function (n) {
+      if (!pdfDoc) return;
+      n = Math.min(Math.max(Math.round(n), 1), pdfDoc.numPages);
+      if (n === pageNum) { pageInput.value = pageNum; return; }
+      pageNum = n;
+      canvasContainer.scrollTop = 0;
+      queueRender(pageNum, true);
+    };
+
+    pageInput.addEventListener('focus', () => pageInput.select());
+    pageInput.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        const n = parseInt(pageInput.value, 10);
+        if (Number.isNaN(n)) pageInput.value = pageNum; else window.goToPage(n);
+        pageInput.blur();
+      } else if (e.key === 'Escape') {
+        pageInput.value = pageNum;
+        pageInput.blur();
+      }
+    });
+    pageInput.addEventListener('blur', () => { pageInput.value = pageNum; });
+
+    function queueRender(num, broadcast) {
+      if (!pdfDoc) return;
+      if (pageRendering) { pendingRender = { num, broadcast }; return; }
+      renderPage(num, broadcast);
+    }
+
+    function renderPage(num, broadcast = true) {
+      pageRendering = true;
+      pdfDoc.getPage(num).then((page) => {
+        const base = page.getViewport({ scale: 1 });
+        pageBase = { w: base.width, h: base.height };
+        const avail = Math.max(canvasContainer.clientWidth - 40, 120);
+        fitScale = avail / base.width;
+
+        const cssScale = fitScale * zoom;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let renderScale = cssScale * dpr;
+        const maxPx = 4096;
+        if (base.width * renderScale > maxPx) renderScale = maxPx / base.width;
+
+        const vp = page.getViewport({ scale: renderScale });
+        canvas.width = vp.width;
+        canvas.height = vp.height;
+        canvas.style.width = `${base.width * cssScale}px`;
+        canvas.style.height = `${base.height * cssScale}px`;
+
+        return page.render({ canvasContext: ctx, viewport: vp }).promise;
+      }).catch(() => {}).then(() => {
+        pageRendering = false;
+        if (pendingRender) {
+          const p = pendingRender; pendingRender = null;
+          renderPage(p.num, p.broadcast);
+        }
+      });
+
+      updatePageUI(num);
+      document.getElementById('prev-page').disabled = (num <= 1);
+      document.getElementById('next-page').disabled = (num >= pdfDoc.numPages);
+      updateZoomLabel();
+      if (broadcast) set(cp('session/currentPage'), num);
+    }
+
+    function setZoom(newZoom, clientX, clientY) {
+      newZoom = Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
+      if (!pdfDoc || !pageBase || newZoom === zoom) return;
+      const rect = canvasContainer.getBoundingClientRect();
+      const px = (clientX ?? rect.left + rect.width / 2) - rect.left;
+      const py = (clientY ?? rect.top + rect.height / 2) - rect.top;
+      const contentX = canvasContainer.scrollLeft + px;
+      const contentY = canvasContainer.scrollTop + py;
+      const ratio = newZoom / zoom;
+      zoom = newZoom;
+
+      canvas.style.width = `${pageBase.w * fitScale * zoom}px`;
+      canvas.style.height = `${pageBase.h * fitScale * zoom}px`;
+      canvasContainer.scrollLeft = contentX * ratio - px;
+      canvasContainer.scrollTop = contentY * ratio - py;
+      updateZoomLabel();
+
+      clearTimeout(zoomTimer);
+      zoomTimer = setTimeout(() => queueRender(pageNum, false), 160);
+    }
+
+    window.zoomBy = (factor) => setZoom(zoom * factor);
+    window.resetZoom = () => {
+      zoom = 1; updateZoomLabel();
+      canvasContainer.scrollLeft = 0; canvasContainer.scrollTop = 0;
+      queueRender(pageNum, false);
+    };
+
+    canvasContainer.addEventListener('wheel', (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        setZoom(zoom * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+      }
+    }, { passive: false });
+
+    canvasContainer.addEventListener('dblclick', () => window.resetZoom());
+
+    // Click-and-drag to pan
+    let panning = false, panStart = null;
+    canvasContainer.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      // Ignore presses on the scrollbars. Measured against the container itself,
+      // not e.offsetX (which is relative to the canvas and broke panning when zoomed in).
+      const r = canvasContainer.getBoundingClientRect();
+      const x = e.clientX - r.left - canvasContainer.clientLeft;
+      const y = e.clientY - r.top - canvasContainer.clientTop;
+      if (x >= canvasContainer.clientWidth || y >= canvasContainer.clientHeight) return;
+      panning = true;
+      panStart = { x: e.clientX, y: e.clientY, left: canvasContainer.scrollLeft, top: canvasContainer.scrollTop };
+      canvasContainer.classList.add('panning');
+      canvasContainer.setPointerCapture(e.pointerId);
+    });
+    canvasContainer.addEventListener('pointermove', (e) => {
+      if (!panning) return;
+      canvasContainer.scrollLeft = panStart.left - (e.clientX - panStart.x);
+      canvasContainer.scrollTop = panStart.top - (e.clientY - panStart.y);
+    });
+    const endPan = (e) => {
+      if (!panning) return;
+      panning = false;
+      canvasContainer.classList.remove('panning');
+      try { canvasContainer.releasePointerCapture(e.pointerId); } catch (_) {}
+    };
+    canvasContainer.addEventListener('pointerup', endPan);
+    canvasContainer.addEventListener('pointercancel', endPan);
+    canvasContainer.addEventListener('lostpointercapture', () => {
+      panning = false; canvasContainer.classList.remove('panning');
+    });
+
+    let fitTimer = null;
+    new ResizeObserver(() => {
+      if (!pdfDoc || canvasContainer.clientWidth < 80) return;
+      clearTimeout(fitTimer);
+      fitTimer = setTimeout(() => queueRender(pageNum, false), 120);
+    }).observe(canvasContainer);
+
+    window.changePage = function (delta) {
+      if (!pdfDoc) return;
+      const target = pageNum + delta;
+      if (target >= 1 && target <= pdfDoc.numPages) {
+        pageNum = target;
+        canvasContainer.scrollTop = 0;
+        queueRender(pageNum, true);
+      }
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (!pdfDoc || e.target.closest('input, select, textarea')) return;
+      if (e.key === 'ArrowRight') window.changePage(1);
+      else if (e.key === 'ArrowLeft') window.changePage(-1);
+      else if (e.key === 'Home') window.goToPage(1);
+      else if (e.key === 'End') window.goToPage(pdfDoc.numPages);
+    });
+
+    // Two tabs: 'pdf' (Booklet) and 'students'
+    const workspace = document.getElementById('workspace');
+    function setView(v) {
+      if (v !== 'students') v = 'pdf';
+      workspace.dataset.view = v;
+      workspace.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === v));
+      try { localStorage.setItem('cf_tab', v); } catch (_) {}
+      requestAnimationFrame(() => { layoutRoster(); });
+    }
+    workspace.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => setView(t.dataset.tab)));
+
+    /* ---- Choosing a booklet: PDFs, or pictures (turned into a PDF so everything else works the same) ---- */
+    const MAX_BASE64 = 13000000; // stays under the 14,000,000 limit in the database rules
+    const OFFICE_RE = /\.(ppt|ppsm|pps|key|docx?|odp|odt)$/i;
+    const PPTX_RE = /\.(pptx|ppsx)$/i;
+    const isPdf = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+    const isImage = (f) => /^image\/(png|jpe?g|webp)$/.test(f.type);
+
+    async function imagesToPdf(files) {
+      if (!window.PDFLib) throw new Error('The picture converter could not load. Check your internet connection.');
+      const out = await PDFLib.PDFDocument.create();
+      const MAX_SIDE = 1800;
+      for (const f of files) {
+        let bmp;
+        try { bmp = await createImageBitmap(f); } catch (_) { throw new Error(`"${f.name}" could not be read as a picture.`); }
+        const k = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height));
+        const w = Math.max(1, Math.round(bmp.width * k)), h = Math.max(1, Math.round(bmp.height * k));
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const g = c.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+        g.drawImage(bmp, 0, 0, w, h);
+        if (bmp.close) bmp.close();
+        const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85));
+        const img = await out.embedJpg(await blob.arrayBuffer());
+        out.addPage([w, h]).drawImage(img, { x: 0, y: 0, width: w, height: h });
+      }
+      return await out.save();
+    }
+
+
+    // A .pptx is drawn slide-by-slide onto canvases, then packed into a PDF (smaller pictures if it would be too big to send).
+    async function pptxToPdf(file, title) {
+      if (!window.PDFLib) throw new Error('The converter could not load. Check your internet connection.');
+      const buf = await file.arrayBuffer();
+      for (const [width, q] of [[2000, 0.82], [1600, 0.78], [1280, 0.74], [1000, 0.7]]) {
+        const { canvases, notes } = await PptxConvert.render(buf, { width, onProgress: (i, n) => { title.textContent = `Converting slide ${i} of ${n}…`; } });
+        title.textContent = 'Building PDF…';
+        const out = await PDFLib.PDFDocument.create();
+        for (const c of canvases) {
+          const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', q));
+          const img = await out.embedJpg(await blob.arrayBuffer());
+          out.addPage([c.width, c.height]).drawImage(img, { x: 0, y: 0, width: c.width, height: c.height });
+          c.width = c.height = 1;
+        }
+        const bytes = await out.save();
+        if (Math.ceil(bytes.length * 1.34) <= MAX_BASE64 || width === 1000) return { bytes, notes };
+      }
+    }
+
+    function toBase64(bytes) {
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return btoa(bin);
+    }
+
+    document.getElementById('pdf-upload').addEventListener('change', async function (e) {
+      const files = [...e.target.files];
+      e.target.value = '';
+      if (!files.length) return;
+
+      if (files.some((f) => OFFICE_RE.test(f.name))) {
+        return alert("PowerPoint, Word and Keynote files can't be shown directly.\n\nIn the app, choose File ▸ Export (or Save As) ▸ PDF, then pick that PDF here. It also keeps the file small.");
+      }
+      const pptx = files.find((f) => PPTX_RE.test(f.name));
+      const pdf = files.find(isPdf);
+      const images = files.filter(isImage).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      if (!pptx && !pdf && !images.length) return alert('Please choose a PDF, a PowerPoint (.pptx), or one or more pictures (PNG, JPG or WebP).');
+
+      let bytes, displayName;
+      try {
+        if (pdf) { bytes = new Uint8Array(await pdf.arrayBuffer()); displayName = pdf.name; }
+        else if (pptx) {
+          const titleEl = document.getElementById('doc-title'), prev = titleEl.textContent;
+          titleEl.textContent = 'Converting PowerPoint…';
+          let r;
+          try { r = await pptxToPdf(pptx, titleEl); } catch (err) { titleEl.textContent = prev; throw new Error("That PowerPoint couldn't be converted: " + err.message + '\n\nIn PowerPoint, choose File ▸ Export ▸ PDF and pick that instead.'); }
+          bytes = r.bytes; displayName = pptx.name.replace(/\.(pptx|ppsx)$/i, '') + '.pdf';
+          if (r.notes && r.notes.length) setTimeout(() => alert('Converted. A few things can\'t be drawn exactly: ' + [...new Set(r.notes)].slice(0, 6).join(', ') + '.\n\nFor a perfect copy, use File ▸ Export ▸ PDF in PowerPoint instead.'), 300);
+        }
+        else {
+          bytes = await imagesToPdf(images);
+          displayName = images[0].name + (images.length > 1 ? ` +${images.length - 1} more` : '');
+        }
+      } catch (err) { return alert(err.message); }
+
+      const base64String = toBase64(bytes);
+      if (base64String.length > MAX_BASE64) {
+        const mb = (bytes.length / 1048576).toFixed(1);
+        return alert(`That file is ${mb} MB, which is too big to send to the class (limit is about 9 MB).\n\nTry exporting it as a smaller PDF ("Reduce file size" / "Compress pictures"), or split it into parts.`);
+      }
+
+      let doc;
+      try { doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise; }
+      catch (_) { return alert("That file couldn't be opened as a PDF."); }
+
+      document.getElementById('doc-title').textContent = displayName;
+      pdfDoc = doc; pageNum = 1; zoom = 1;
+      emptyState.style.display = 'none';
+      canvasWrapper.style.display = 'block';
+      canvasContainer.scrollLeft = 0; canvasContainer.scrollTop = 0;
+      queueRender(1, true);
+
+      try {
+        await set(cp('session/activePdfData'), base64String);
+        await set(cp('session/currentPage'), 1);
+        await set(cp('session/fileName'), displayName.slice(0, 100));
+      } catch (err) {
+        alert('Error broadcasting the booklet: ' + err.message);
+      }
+    });
+
+    // Teacher / Solo toggle
+    const modeToggle = document.getElementById('mode-toggle');
+    function paintMode(solo) {
+      isSoloWork = solo;
+      modeToggle.classList.toggle('solo', solo);
+      modeToggle.querySelectorAll('.mode-opt').forEach((b) => b.classList.toggle('active', (b.dataset.mode === 'solo') === solo));
+    }
+    modeToggle.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mode-opt');
+      if (!btn) return;
+      const solo = btn.dataset.mode === 'solo';
+      if (solo === isSoloWork) return;
+      paintMode(solo);
+      set(cp('session/soloWork'), solo);
+    });
+    const handleSolo = (snap) => paintMode(!!snap.val());
+
+    /* =====================================================
+       LIVE ROSTER
+       ===================================================== */
+    const roster = document.getElementById('roster');
+    const chipTotal = document.getElementById('chip-total');
+    const tabCount = document.getElementById('tab-count');
+    const cards = new Map();
+    let previousRoster = {};
+    let isInitialLoad = true;
+
+    function buildCard(id) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.id = id;
+      return card;
+    }
+
+    function fillCard(card, id, s, justRewarded) {
+      const name = s.name || 'Mystery';
+      const stars = s.stars || 0;
+      const emoji = s.emoji || pickEmoji(name);   // the one saved on the student's own device, else one picked from their name
+      card.title = `Click to give ${name} a 9`;
+      card.innerHTML = `
+        <span class="emoji">${emoji}</span>
+        <span class="student-name">${esc(name)}</span>
+        <span class="score ${justRewarded ? 'pop' : ''}"><span class="num">${stars}</span><span class="lbl">9s</span></span>`;
+      const [pb, pd] = pillColors(name, emoji);
+      card.style.setProperty('--pb', pb);
+      card.style.setProperty('--pd', pd);
+      if (justRewarded) {
+        const plus = document.createElement('div');
+        plus.className = 'floaty-plus';
+        plus.textContent = '+1';
+        card.appendChild(plus);
+        setTimeout(() => plus.remove(), 1000);
+      }
+    }
+
+    /* -----------------------------------------------------
+       Responsive layout.
+       Pills have different widths (long names are wider). At a
+       reference size we measure each pill, then find the largest
+       scale at which greedy row-wrapping still fits the area.
+       ----------------------------------------------------- */
+    const GAP = 10, MAX_SCALE = 1.5, MIN_SCALE = 0.45, SAFETY = 0.97;
+
+    function layoutRoster() {
+      if (!cards.size) { roster.style.setProperty('--fs', '16px'); return; }
+      const cs = getComputedStyle(roster);
+      const W = roster.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const H = roster.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      if (W <= 0 || H <= 0) return;
+
+      roster.style.setProperty('--fs', '16px');
+      const els = [...cards.values()];
+      const widths = els.map((c) => c.offsetWidth);
+      const h = Math.max(...els.map((c) => c.offsetHeight));
+      // Plan for at least ~12 pills so a few students don't get giant pills
+      const pad = [];
+      while (widths.length + pad.length < 12) pad.push(Math.max(...widths));
+      const all = widths.concat(pad);
+
+      const fits = (sc) => {
+        let rows = 1, x = 0;
+        for (const w0 of all) {
+          const w = w0 * sc;
+          if (w > W) return false;
+          if (x && x + GAP + w > W) { rows++; x = w; } else x += (x ? GAP : 0) + w;
+        }
+        return rows * h * sc + (rows - 1) * GAP <= H;
+      };
+      let lo = MIN_SCALE, hi = MAX_SCALE;
+      if (!fits(lo)) hi = lo;
+      else for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; }
+      roster.style.setProperty('--fs', `${(16 * lo * SAFETY).toFixed(2)}px`);
+    }
+
+    new ResizeObserver(layoutRoster).observe(roster);
+    let savedTab = 'pdf'; try { savedTab = localStorage.getItem('cf_tab') || 'pdf'; } catch (_) {}
+    setView(savedTab);
+    window.addEventListener('resize', layoutRoster);
+
+    roster.addEventListener('click', (e) => {
+      const card = e.target.closest('.card');
+      if (card) sendReward(card.dataset.id);
+    });
+
+    /* Edit list: rename, correct 9s, or remove students from this session */
+    const eModal = document.getElementById('student-modal');
+    const eList = document.getElementById('edit-list');
+    const eEmpty = document.getElementById('edit-empty');
+    function openEditList() {
+      const entries = Object.entries(previousRoster)
+        .sort((a, b) => String(a[1].name || '').localeCompare(String(b[1].name || '')));
+      eList.innerHTML = entries.map(([id, st]) => `
+        <div class="erow" data-id="${esc(id)}" data-name="${esc(st.name || '')}" data-stars="${st.stars || 0}">
+          <span class="emoji">${st.emoji || pickEmoji(st.name || '')}</span>
+          <input class="e-name" type="text" maxlength="40" value="${esc(st.name || '')}" aria-label="Name" spellcheck="false">
+          <input class="e-stars" type="number" min="0" max="9999" step="1" value="${st.stars || 0}" aria-label="9s">
+          <button type="button" class="e-remove">Remove</button>
+        </div>`).join('');
+      eEmpty.style.display = entries.length ? 'none' : 'block';
+      document.getElementById('e-error').textContent = '';
+      eModal.hidden = false;
+    }
+    function closeEditList() { eModal.hidden = true; eList.innerHTML = ''; }
+    eList.addEventListener('click', (e) => {
+      const btn = e.target.closest('.e-remove');
+      if (!btn) return;
+      const row = btn.closest('.erow');
+      const gone = row.classList.toggle('removed');
+      btn.textContent = gone ? 'Undo' : 'Remove';
+    });
+    document.getElementById('edit-students').addEventListener('click', openEditList);
+    document.getElementById('e-cancel').addEventListener('click', closeEditList);
+    eModal.addEventListener('mousedown', (e) => { if (e.target === eModal) closeEditList(); });
+    eModal.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeEditList(); });
+    document.getElementById('student-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const updates = {};
+      let removed = 0;
+      for (const row of eList.querySelectorAll('.erow')) {
+        const id = row.dataset.id;
+        if (row.classList.contains('removed')) { updates[`students/${id}`] = null; removed++; continue; }
+        const name = row.querySelector('.e-name').value.trim().slice(0, 40);
+        const stars = Math.floor(Number(row.querySelector('.e-stars').value));
+        if (!name || !Number.isFinite(stars) || stars < 0 || stars > 9999) {
+          document.getElementById('e-error').textContent = 'Every student needs a name and 9s between 0 and 9999.';
+          return;
+        }
+        if (name !== row.dataset.name) updates[`students/${id}/name`] = name;
+        if (stars !== Number(row.dataset.stars)) updates[`students/${id}/stars`] = stars;
+      }
+      if (!Object.keys(updates).length) return closeEditList();
+      if (removed && !confirm(`Remove ${removed} student${removed === 1 ? '' : 's'} from this session? Their 9s will be lost.`)) return;
+      update(ref(db, `classes/${classCode}`), updates).catch((err) => alert('Could not save: ' + err.message));
+      closeEditList();
+    });
+
+    function handleStudents(snapshot) {
+      const current = snapshot.val() || {};
+      const ids = Object.keys(current);
+      chipTotal.textContent = `${ids.length} ${ids.length === 1 ? 'student' : 'students'}`;
+      tabCount.textContent = ids.length;
+
+      const placeholder = roster.querySelector('.grid-empty');
+      if (ids.length && placeholder) placeholder.remove();
+      if (!ids.length && !placeholder) {
+        roster.innerHTML = '<div class="grid-empty"><span class="big">👀</span>Waiting for students to join…</div>';
+      }
+
+      for (const [id, card] of cards) {
+        if (!current[id]) { card.remove(); cards.delete(id); }
+      }
+
+      ids.forEach((id) => {
+        const s = current[id];
+        const sig = `${s.name}|${s.stars || 0}|${s.emoji || ''}`;
+        let card = cards.get(id);
+        if (!card) {
+          card = buildCard(id);
+          cards.set(id, card);
+          roster.appendChild(card);
+        }
+        if (card.dataset.sig !== sig) {
+          const prevStars = previousRoster[id]?.stars || 0;
+          const justRewarded = !isInitialLoad && card.dataset.sig !== undefined && (s.stars || 0) > prevStars;
+          fillCard(card, id, s, justRewarded);
+          card.dataset.sig = sig;
+        }
+      });
+
+      // Rank by 9s (highest first), ties alphabetical
+      const ranked = [...ids].sort((a, b) => {
+        const diff = (current[b].stars || 0) - (current[a].stars || 0);
+        return diff || String(current[a].name || '').localeCompare(String(current[b].name || ''));
+      });
+      ranked.forEach((id, i) => { cards.get(id).style.order = i; });
+
+      layoutRoster();
+
+      previousRoster = JSON.parse(JSON.stringify(current));
+      isInitialLoad = false;
+    }
+
+    function sendReward(id) {
+      const stars = previousRoster[id]?.stars || 0;
+      playSound('award');
+      update(cp(`students/${id}`), { stars: stars + 1 });
+    }
+
+    window.rewardAllActive = function () {
+      const updates = {};
+      let count = 0;
+      for (const [id, student] of Object.entries(previousRoster)) {
+        updates[`students/${id}/stars`] = (student.stars || 0) + 1;
+        count++;
+      }
+      if (!count) return alert('No students in the class yet.');
+      playSound('award');
+      update(ref(db, `classes/${classCode}`), updates);
+    };
+
+    window.exportNines = async function () {
+      const ok = classes.length ? classes : [];
+      if (!ok.length) return alert('No classes to export yet.');
+      let sections;
+      try {
+        sections = await Promise.all([...ok].sort((a, b) => a.name.localeCompare(b.name)).map(async (c) => {
+          const [stu, day] = await Promise.all([
+            get(ref(db, `classes/${c.code}/students`)),
+            get(ref(db, `classes/${c.code}/meta/day`))
+          ]);
+          const rows = Object.values(stu.val() || {})
+            .map((s) => ({ name: s.name || 'Mystery', stars: s.stars || 0 }))
+            .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
+          return { name: c.name, day: day.val() || '', rows };
+        }));
+      } catch (err) { return alert('Could not read the classes: ' + err.message); }
+      if (!sections.some((x) => x.rows.length)) return alert('No students to export yet.');
+
+      const csvCell = (v) => {
+        let t = String(v);
+        if (/^[=+\-@]/.test(t)) t = "'" + t;
+        return `"${t.replace(/"/g, '""')}"`;
+      };
+      const lines = ['Class,Date,Rank,Student,9s'];
+      sections.filter((x) => x.rows.length).forEach((sec, i) => {
+        if (i) lines.push('');
+        let rank = 0, prev = null;
+        sec.rows.forEach((r, idx) => {
+          if (r.stars !== prev) { rank = idx + 1; prev = r.stars; }
+          lines.push([csvCell(sec.name), csvCell(sec.day), rank, csvCell(r.name), r.stars].join(','));
+        });
+      });
+      const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const fileName = `9s-by-class-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.csv`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+
+    /* =====================================================
+       CLASS TIMER (stored in session/timer, so students see it too)
+       state: 'running' {endsAt, duration} | 'paused' {remaining, duration}; nothing stored = idle
+       ===================================================== */
+    let serverOffset = 0;
+    onValue(ref(db, '.info/serverTimeOffset'), (snap) => { serverOffset = Number(snap.val()) || 0; });
+    const nowMs = () => Date.now() + serverOffset;
+
+    const tWrap = document.getElementById('timer-wrap');
+    const tSet = document.getElementById('timer-set');
+    const tMin = document.getElementById('t-min');
+    const tClock = document.getElementById('t-clock');
+    const tStart = document.getElementById('t-start');
+    const tReset = document.getElementById('t-reset');
+    let timer = null;
+    let chimedFor = null;
+
+    try { const m = parseInt(localStorage.getItem('cf_timer_min'), 10); if (m >= 1 && m <= 180) tMin.value = m; } catch (_) {}
+    const readMinutes = () => Math.min(180, Math.max(1, Math.floor(Number(tMin.value)) || 5));
+    const fmt = (ms) => {
+      const t = Math.max(0, Math.ceil(ms / 1000));
+      const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
+      const pad = (n) => String(n).padStart(2, '0');
+      return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+    };
+
+    function renderTimer() {
+      const idle = !timer;
+      tSet.hidden = !idle;
+      tClock.hidden = idle;
+      tReset.hidden = idle;
+      tClock.classList.remove('paused', 'low', 'done');
+      if (idle) { tStart.hidden = false; tStart.textContent = '▶ Start'; return; }
+      if (timer.state === 'paused') {
+        tClock.textContent = fmt(timer.remaining);
+        tClock.classList.add('paused');
+        tStart.hidden = false; tStart.textContent = '▶ Resume'; tReset.textContent = 'Reset';
+        return;
+      }
+      const left = timer.endsAt - nowMs();
+      if (left <= 0) {
+        tClock.textContent = "Time's up!";
+        tClock.classList.add('done');
+        tStart.hidden = true; tReset.textContent = 'Clear';
+        if (chimedFor !== timer.endsAt) {
+          chimedFor = timer.endsAt;
+          if (-left < 6000) playSound('timer');   // not again after a page refresh
+        }
+        return;
+      }
+      tClock.textContent = fmt(left);
+      if (left <= 10000) tClock.classList.add('low');
+      tStart.hidden = false; tStart.textContent = '⏸ Pause'; tReset.textContent = 'Reset';
+    }
+    setInterval(renderTimer, 250);
+
+    const handleTimer = (snap) => { timer = snap.val(); renderTimer(); };
+
+    function bumpMinutes(d) { tMin.value = Math.min(180, Math.max(1, readMinutes() + d)); try { localStorage.setItem('cf_timer_min', tMin.value); } catch (_) {} }
+    document.getElementById('t-minus').addEventListener('click', () => bumpMinutes(-1));
+    document.getElementById('t-plus').addEventListener('click', () => bumpMinutes(1));
+    tMin.addEventListener('change', () => { tMin.value = readMinutes(); try { localStorage.setItem('cf_timer_min', tMin.value); } catch (_) {} });
+    tMin.addEventListener('keydown', (e) => { if (e.key === 'Enter') tStart.click(); });
+
+    tStart.addEventListener('click', () => {
+      if (!classCode) return;
+      let next;
+      if (!timer) {
+        const dur = readMinutes() * 60000;
+        next = { state: 'running', endsAt: nowMs() + dur, duration: dur };
+        try { localStorage.setItem('cf_timer_min', String(readMinutes())); } catch (_) {}
+      } else if (timer.state === 'running') {
+        next = { state: 'paused', remaining: Math.max(0, timer.endsAt - nowMs()), duration: timer.duration };
+      } else {
+        next = { state: 'running', endsAt: nowMs() + timer.remaining, duration: timer.duration };
+      }
+      audioCtx.resume().catch(() => {}); // so the end chime is allowed to play
+      set(cp('session/timer'), next).catch((err) => alert('Could not start the timer: ' + err.message));
+    });
+    tReset.addEventListener('click', () => { if (classCode) remove(cp('session/timer')).catch(() => {}); });
+
+    /* =====================================================
+       CLASS LIFECYCLE
+       - a class keeps its name and code for good
+       - its lesson data (students, 9s, booklet) is cleared the first time
+         it's opened on a new day, or at midnight if this page is already open
+       - switching class leaves the other class's data alone for the rest of the day
+       ===================================================== */
+    let unsubs = [];
+    let classDay = todayStr();
+    let wiping = false;
+    let dbErrorShown = false;
+
+    function dbError(err) {
+      console.error(err);
+      if (dbErrorShown) return;
+      dbErrorShown = true;
+      alert('Could not reach the class database: ' + err.message + '\n\nCheck the Firebase rules have been published.');
+    }
+
+    function attach() {
+      detach();
+      unsubs.push(onValue(cp('session/soloWork'), handleSolo, dbError));
+      unsubs.push(onValue(cp('session/timer'), handleTimer, dbError));
+      unsubs.push(onValue(cp('students'), handleStudents, dbError));
+    }
+    function detach() { unsubs.forEach((u) => u()); unsubs = []; }
+
+    const classSelect = document.getElementById('class-select');
+    const editBtn = document.getElementById('edit-class');
+
+    function showCode() { document.getElementById('class-code').textContent = classCode || '······'; }
+
+    function renderClassPicker() {
+      classSelect.innerHTML = classes.map((c) => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+      classSelect.value = classCode || '';
+      classSelect.disabled = classes.length === 0;
+      editBtn.disabled = !classCode;
+      const c = currentClass();
+      document.title = 'Lessonlab Teacher';
+      showCode();
+    }
+
+    function resetClassUI() {
+      cards.forEach((c) => c.remove());
+      cards.clear();
+      previousRoster = {};
+      isInitialLoad = true;
+      paintMode(false);
+      timer = null; renderTimer();
+      chipTotal.textContent = '0 students';
+      tabCount.textContent = '0';
+
+      // unload the booklet viewer
+      clearTimeout(zoomTimer); clearTimeout(fitTimer);
+      pendingRender = null;
+      pdfDoc = null; pageNum = 1; zoom = 1; pageBase = null;
+      canvasWrapper.style.display = 'none';
+      emptyState.style.display = '';
+      pageLabel.style.display = '';
+      pageControls.style.display = 'none';
+      document.getElementById('doc-title').textContent = 'No file';
+      document.getElementById('pdf-upload').value = '';
+      document.getElementById('prev-page').disabled = true;
+      document.getElementById('next-page').disabled = true;
+      updateZoomLabel();
+    }
+
+    // Fresh lesson data for today. The class itself (its name and code) is never touched.
+    async function clearClassData(day) {
+      await update(ref(db, `classes/${classCode}`), { students: null, session: null, 'meta/day': day });
+    }
+
+    // Make sure this class exists in the database and is ready for today
+    async function ensureMeta() {
+      const c = currentClass();
+      const today = todayStr();
+      const meta = (await get(cp('meta'))).val();
+      if (!meta) {
+        // brand new (or removed by hand): create it, dropping anything stray left under this code
+        await update(ref(db, `classes/${classCode}`), {
+          students: null,
+          session: null,
+          meta: { name: c.name, day: today, created: Date.now() }
+        });
+      } else {
+        if (meta.day !== today) await clearClassData(today); // a new day starts clean
+        if (meta.name !== c.name) await update(cp('meta'), { name: c.name });
+      }
+      classDay = today;
+    }
+
+    // Put the class's current booklet back on the teacher's screen (after a refresh or switching class)
+    async function resumeBooklet() {
+      const code = classCode;
+      try {
+        const [pdf, page, file] = await Promise.all([
+          get(cp('session/activePdfData')), get(cp('session/currentPage')), get(cp('session/fileName'))
+        ]);
+        const b64 = pdf.val();
+        if (!b64 || code !== classCode || pdfDoc) return;
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const doc = await pdfjsLib.getDocument({ data: bytes }).promise;
+        if (code !== classCode || pdfDoc) return;
+        pdfDoc = doc; zoom = 1;
+        pageNum = Math.min(Math.max(parseInt(page.val(), 10) || 1, 1), doc.numPages);
+        document.getElementById('doc-title').textContent = file.val() || 'Booklet';
+        emptyState.style.display = 'none';
+        canvasWrapper.style.display = 'block';
+        canvasContainer.scrollLeft = 0; canvasContainer.scrollTop = 0;
+        queueRender(pageNum, false);
+      } catch (e) {
+        console.error('Could not reload the booklet', e);
+      }
+    }
+
+    async function openClass() {
+      wiping = true;
+      renderClassPicker();
+      try { await ensureMeta(); } catch (e) { dbError(e); }
+      attach();
+      wiping = false;
+      resumeBooklet();
+    }
+
+    async function switchClass(code) {
+      if (wiping || code === classCode || !classes.some((c) => c.code === code)) { renderClassPicker(); return; }
+      detach();
+      classCode = code;
+      saveClasses();
+      resetClassUI();
+      await openClass();
+    }
+
+    async function addClass(name) {
+      let code = null;
+      for (let i = 0; i < 6 && !code; i++) {
+        const candidate = genCode();
+        const taken = classes.some((c) => c.code === candidate) || (await get(ref(db, `classes/${candidate}/meta`))).exists();
+        if (!taken) code = candidate;
+      }
+      if (!code) throw new Error('Could not find a free class code. Please try again.');
+      classes.push({ code, name });
+      saveClasses();
+      await switchClass(code);
+    }
+
+    async function renameClass(name) {
+      const c = currentClass();
+      if (!c || c.name === name) return;
+      c.name = name;
+      saveClasses();
+      renderClassPicker();
+      try { await update(cp('meta'), { name }); } catch (e) { dbError(e); }
+    }
+
+    // Clear today's students, 9s and booklet (new day, or the "Clear" option). The class stays.
+    async function resetLesson() {
+      if (wiping || !classCode) return;
+      wiping = true;
+      detach();
+      try { await clearClassData(todayStr()); } catch (e) { dbError(e); }
+      classDay = todayStr();
+      resetClassUI();
+      attach();
+      wiping = false;
+    }
+
+    async function deleteClass() {
+      if (wiping || !classCode) return;
+      wiping = true;
+      const doomed = classCode;
+      detach();
+      try { await remove(ref(db, `classes/${doomed}`)); } catch (e) { dbError(e); }
+      classes = classes.filter((c) => c.code !== doomed);
+      classCode = null;
+      saveClasses();
+      resetClassUI();
+      wiping = false;
+      if (classes.length) await switchClass(classes[0].code);
+      else { renderClassPicker(); await boot(); }
+    }
+
+    /* ---------- the name dialog (first class / new class / edit class) ---------- */
+    const modal = document.getElementById('modal');
+    const mForm = document.getElementById('modal-form');
+    const mTitle = document.getElementById('modal-title');
+    const mSub = document.getElementById('modal-sub');
+    const mName = document.getElementById('modal-name');
+    const mError = document.getElementById('modal-error');
+    const mOk = document.getElementById('modal-ok');
+    const mCancel = document.getElementById('modal-cancel');
+    const mDanger = document.getElementById('modal-danger');
+    const mClear = document.getElementById('modal-clear');
+    const mDelete = document.getElementById('modal-delete');
+
+    // Resolves to { action: 'save', name } | { action: 'clear' } | { action: 'delete' } | null (cancelled)
+    function classDialog({ mode, name = '' }) {
+      const cfg = {
+        first: { title: 'Welcome! Create your first class', sub: 'Give it a name, like "9B Maths". Students join with its code, and the code stays the same every lesson.', ok: 'Create class', cancel: false, danger: false },
+        new:   { title: 'New class', sub: 'Each class gets its own permanent code, so students only have to join it once.', ok: 'Create class', cancel: true, danger: false },
+        edit:  { title: 'Edit class', sub: `Its code, ${classCode}, stays the same.`, ok: 'Save', cancel: true, danger: true }
+      }[mode];
+
+      return new Promise((resolve) => {
+        mTitle.textContent = cfg.title;
+        mSub.textContent = cfg.sub;
+        mOk.textContent = cfg.ok;
+        mCancel.style.display = cfg.cancel ? '' : 'none';
+        mDanger.style.display = cfg.danger ? '' : 'none';
+        mName.value = name;
+        mError.textContent = '';
+        modal.hidden = false;
+        setTimeout(() => { mName.focus(); mName.select(); }, 30);
+
+        const done = (result) => {
+          modal.hidden = true;
+          mForm.removeEventListener('submit', onSubmit);
+          mCancel.removeEventListener('click', onCancel);
+          mClear.removeEventListener('click', onClear);
+          mDelete.removeEventListener('click', onDelete);
+          modal.removeEventListener('mousedown', onBackdrop);
+          document.removeEventListener('keydown', onKey, true);
+          resolve(result);
+        };
+        const onSubmit = (e) => {
+          e.preventDefault();
+          const n = mName.value.trim().replace(/\s+/g, ' ');
+          if (!n) { mError.textContent = 'Please give the class a name.'; mName.focus(); return; }
+          const clash = classes.some((c) => c.name.toLowerCase() === n.toLowerCase() && !(mode === 'edit' && c.code === classCode));
+          if (clash) { mError.textContent = 'You already have a class with that name.'; mName.focus(); return; }
+          done({ action: 'save', name: n });
+        };
+        const onCancel = () => { if (cfg.cancel) done(null); };
+        const onBackdrop = (e) => { if (e.target === modal && cfg.cancel) done(null); };
+        const onKey = (e) => { if (e.key === 'Escape' && cfg.cancel) { e.stopPropagation(); done(null); } };
+        const onClear = () => done({ action: 'clear' });
+        const onDelete = () => done({ action: 'delete' });
+
+        mForm.addEventListener('submit', onSubmit);
+        mCancel.addEventListener('click', onCancel);
+        mClear.addEventListener('click', onClear);
+        mDelete.addEventListener('click', onDelete);
+        modal.addEventListener('mousedown', onBackdrop);
+        document.addEventListener('keydown', onKey, true);
+      });
+    }
+
+    async function boot() {
+      const saved = lsGet(LS_ACTIVE);
+      classCode = classes.some((c) => c.code === saved) ? saved : (classes[0] ? classes[0].code : null);
+      if (classCode) { saveClasses(); await openClass(); return; }
+
+      // No classes yet: the first one has to be named before anything else
+      renderClassPicker();
+      let name = '';
+      for (;;) {
+        const res = await classDialog({ mode: 'first', name });
+        name = res.name;
+        try { await addClass(name); return; }
+        catch (e) { alert('Could not create the class: ' + e.message); }
+      }
+    }
+
+    // Midnight clear while the page is open (checked every 30s so a sleeping laptop still catches up)
+    const newDayCheck = () => { if (classCode && !wiping && todayStr() !== classDay) resetLesson(); };
+    setInterval(newDayCheck, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) newDayCheck(); });
+
+    // Pick the live class
+    classSelect.addEventListener('change', () => {
+      const code = classSelect.value;
+      classSelect.blur(); // so the arrow keys keep turning booklet pages instead of changing class
+      switchClass(code);
+    });
+
+    document.getElementById('code-pill').addEventListener('click', () => {
+      if (!classCode) return;
+      const label = document.getElementById('class-code');
+      const done = () => { label.textContent = 'Copied!'; setTimeout(showCode, 1000); };
+      if (navigator.clipboard) navigator.clipboard.writeText(classCode).then(done).catch(() => {});
+    });
+
+    document.getElementById('new-class').addEventListener('click', async () => {
+      const res = await classDialog({ mode: 'new' });
+      if (!res) return;
+      try { await addClass(res.name); } catch (e) { alert('Could not create the class: ' + e.message); }
+    });
+
+    editBtn.addEventListener('click', async () => {
+      const c = currentClass();
+      if (!c) return;
+      const res = await classDialog({ mode: 'edit', name: c.name });
+      if (!res) return;
+      if (res.action === 'save') {
+        await renameClass(res.name);
+      } else if (res.action === 'clear') {
+        if (confirm(`Clear the students, 9s and booklet for ${c.name}?\n\nThe class and its code stay the same.`)) await resetLesson();
+      } else if (res.action === 'delete') {
+        if (confirm(`Delete ${c.name}?\n\nThis removes the class, its code, its students, their 9s and the booklet. Anyone using the code will be disconnected.`)) await deleteClass();
+      }
+    });
+
+    boot().catch(dbError);
+  </script>
+</body>
+</html>

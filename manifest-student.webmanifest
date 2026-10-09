@@ -1,10 +1,10 @@
 {
-  "id": "./Lessonlab-Student.html",
+  "id": "./student.html",
   "name": "Lessonlab Student",
   "short_name": "Lessonlab",
   "description": "Join your class on Lessonlab.",
-  "start_url": "./Lessonlab-Student.html",
-  "scope": "./Lessonlab-Student.html",
+  "start_url": "./student.html",
+  "scope": "./student.html",
   "display": "standalone",
   "background_color": "#f5f3fb",
   "theme_color": "#c9b8f6",

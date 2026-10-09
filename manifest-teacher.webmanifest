@@ -1,10 +1,10 @@
 {
-  "id": "./Lessonlab-Teacher.html",
+  "id": "./teacher.html",
   "name": "Lessonlab",
   "short_name": "Lessonlab",
   "description": "Lessonlab teacher dashboard: share a booklet, run a timer and give out 9s.",
-  "start_url": "./Lessonlab-Teacher.html",
-  "scope": "./Lessonlab-Teacher.html",
+  "start_url": "./teacher.html",
+  "scope": "./teacher.html",
   "display": "standalone",
   "background_color": "#f5f3fb",
   "theme_color": "#c9b8f6",

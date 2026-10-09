@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lessonlab Student</title>
+  <link rel="manifest" href="manifest-student.webmanifest">
+  <meta name="theme-color" content="#c9b8f6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lessonlab Student">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='10' fill='%23c9b8f6' stroke='%237d68d0' stroke-width='4'/%3E%3Cg fill='none' stroke='%231f1b3a' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 16V44H31'/%3E%3Cpath d='M42 16V39Q42 44 47 44'/%3E%3C/g%3E%3C/svg%3E">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+  <style>
+    :root {
+      --bg: #f5f3fb; --text: #2f3552; --muted: #7b82a0; --line: #e4e1f1;
+      --lav: #e7e1f5; --lav-2: #ece9f6;
+    }
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0; padding: 0; height: 100%; overflow: hidden; color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #f6f1fb 0%, #eef5fb 50%, #effaf5 100%) fixed;
+    }
+    button, input { font-family: inherit; }
+
+    /* ---------- brand ---------- */
+    .brand-wrap { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+    .logo { width: 28px; height: 28px; flex-shrink: 0; }
+    .logo svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .brand { font-weight: 700; font-size: 1.3rem; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+    .brand .w-c { color: #e0719e; }
+    .brand .w-f { color: #5b9bd5; }
+
+    /* ---------- join screen ---------- */
+    #join { display: flex; align-items: center; justify-content: center; height: 100%; height: 100dvh; padding: 1rem; }
+    .join-card {
+      width: min(380px, 100%); background: #fff; border: 1px solid var(--line); border-radius: 18px;
+      padding: 26px 24px 22px; text-align: center; display: flex; flex-direction: column; align-items: stretch;
+      box-shadow: 0 10px 40px rgba(70,55,120,.10);
+    }
+    .join-card .brand-wrap { justify-content: center; margin-bottom: 4px; }
+    .join-card .logo { width: 44px; height: 44px; }
+    .join-card .brand { font-size: 2rem; }
+    .join-card h2 { margin: 10px 0 2px; font-size: 1.15rem; font-weight: 700; }
+    .hint { color: var(--muted); font-size: .9rem; margin: 0 0 12px; }
+    .join-card input {
+      width: 100%; padding: 12px 14px; margin: 5px 0; font-size: 1.05rem; font-weight: 600; color: var(--text);
+      background: #faf9fe; border: 1.5px solid var(--line); border-radius: 12px; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .join-card input:focus { border-color: #b9a6f0; box-shadow: 0 0 0 3px rgba(185,166,240,.25); background: #fff; }
+    #code { text-transform: uppercase; letter-spacing: .3em; text-align: center; font-weight: 800; }
+    #class-name { min-height: 1.4em; color: #2c7a5a; font-weight: 700; text-align: center; margin-top: 2px; }
+    #join-error { min-height: 1.4em; margin: 2px 0 4px; color: #b3414f; font-size: .92rem; font-weight: 600; text-align: center; }
+    #start-btn {
+      width: 100%; padding: 12px 16px; font-size: 1.05rem; font-weight: 700; border: 1px solid #a9dcc0; border-radius: 12px;
+      background: #d5f2e3; color: #276a4b; cursor: pointer; transition: background .15s;
+    }
+    #start-btn:hover { background: #c6ebd8; }
+    #start-btn:disabled { opacity: .6; cursor: default; }
+
+    /* ---------- lesson screen ---------- */
+    #viewer-container { display: none; flex-direction: column; height: 100%; height: 100dvh; padding: 6px 8px; gap: 6px; }
+
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 3px 10px; min-height: 36px;
+    }
+    .top-left, .top-right { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .top-right { justify-content: flex-end; }
+
+    .me-pill {
+      display: inline-flex; align-items: center; gap: 8px; padding: 2px 6px 2px 3px; border-radius: 999px;
+      background: #eef3fb; border: 1.5px solid #cfdcf0; min-width: 0;
+    }
+    #my-emoji {
+      font-size: 1.35rem; line-height: 1; width: 1.7rem; height: 1.7rem; display: grid; place-items: center;
+      background: rgba(255,255,255,.75); border-radius: 50%; flex-shrink: 0;
+      font-family: 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
+    }
+    #my-name { font-weight: 700; font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34vw; }
+    .me-score { display: inline-flex; align-items: baseline; gap: 3px; background: rgba(255,255,255,.78); border-radius: 999px; padding: 0 10px; flex-shrink: 0; }
+    #my-stars { font-weight: 800; font-size: 1.05rem; color: #6a5418; }
+    .me-score small { font-size: .7rem; font-weight: 700; color: #85703a; }
+    .me-score.pop { animation: pop .5s cubic-bezier(.3,1.8,.5,1); }
+    @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+    #class-title { font-weight: 700; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 28vw; }
+    .code-chip {
+      font-weight: 800; font-size: .9rem; letter-spacing: .16em; padding: 1px 10px; border-radius: 9px;
+      border: 1.5px dashed #f0bf9c; background: #ffe9d9; color: #86492a;
+    }
+    .timer-pill {
+      font-size: 1.05rem; font-weight: 700; padding: 1px 12px; border-radius: 9px; background: #e9f1fb; color: #2f5a86;
+      font-variant-numeric: tabular-nums; letter-spacing: .03em; white-space: nowrap;
+    }
+    .timer-pill[hidden] { display: none; }
+    .timer-pill.paused { background: #f1eef9; color: #7b82a0; }
+    .timer-pill.low { background: #ffe9d9; color: #a4531f; }
+    .timer-pill.done { background: #fde1ea; color: #a13a5d; animation: tpulse 1s ease-in-out infinite; }
+    @keyframes tpulse { 50% { opacity: .55; } }
+
+    .sub-bar {
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px;
+      background: var(--lav); border-radius: 10px; padding: 3px 10px; min-height: 32px;
+    }
+    .sub-bar > .zoom-controls { justify-self: start; }
+    .sub-bar > #mode-pill { justify-self: center; }
+    #page-info { white-space: nowrap; }
+    .right-tools { justify-self: end; display: flex; align-items: center; gap: 8px; }
+    .zoom-controls { display: flex; align-items: center; gap: 4px; }
+    .zoom-controls button {
+      min-width: 26px; padding: 2px 8px; font-size: .85rem; font-weight: 700; color: var(--text); background: #fff;
+      border: 1px solid #ddd8ee; border-radius: 8px; cursor: pointer;
+    }
+    .zoom-controls button:hover { background: #f4f1fb; }
+    #zoom-display { min-width: 3.2em; text-align: center; font-size: .8rem; font-weight: 700; color: #6b6392; }
+    .status-pill { font-size: .8rem; padding: 2px 11px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
+    .pill-locked { background: rgba(255,255,255,.65); color: #6b6392; }
+    .pill-solo { background: #a9e1d2; color: #1d5a4a; }
+    #page-info { font-weight: 700; font-size: .88rem; color: #4a4f6e; }
+    #page-controls[hidden] { display: none; }
+    #page-input {
+      width: 3.4em; padding: 1px 4px; margin: 0 2px; text-align: center; font: inherit; font-weight: 700; color: var(--text);
+      background: #fff; border: 1px solid #ddd8ee; border-radius: 8px; outline: none; -moz-appearance: textfield; appearance: textfield;
+    }
+    #page-input::-webkit-outer-spin-button, #page-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    #page-input:focus { border-color: #b9a6f0; box-shadow: 0 0 0 3px rgba(185,166,240,.25); }
+    /* when the teacher is leading, the number is just shown, not editable */
+    #page-input:disabled { background: transparent; border-color: transparent; color: #4a4f6e; opacity: 1; -webkit-text-fill-color: #4a4f6e; }
+    .nav-btns { display: none; gap: 6px; }
+    .nav-btns button {
+      white-space: nowrap;
+      padding: 3px 12px; font-size: .8rem; font-weight: 700; color: var(--text); background: #fff;
+      border: 1px solid #ddd8ee; border-radius: 8px; cursor: pointer;
+    }
+    .nav-btns button:hover { background: #f4f1fb; }
+
+    .canvas-scroll-area {
+      flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: flex-start;
+      padding: 10px; background: var(--lav-2); border-radius: 10px; touch-action: pan-x pan-y; overscroll-behavior: contain;
+    }
+    canvas { display: block; margin: 0 auto; flex-shrink: 0; box-shadow: 0 2px 14px rgba(46,58,78,.2); border-radius: 4px; }
+    .canvas-scroll-area.zoomed { cursor: grab; }
+    .canvas-scroll-area.zoomed.panning { cursor: grabbing; }
+    #waiting-msg { align-self: center; margin-top: 40px; color: var(--muted); font-size: 1.1rem; text-align: center; }
+
+    #reward-banner {
+      position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+      background: #fff2c4; color: #6a5418; border: 1.5px solid #ecd783; padding: 12px 24px; border-radius: 30px;
+      font-size: 1.15rem; font-weight: 700; box-shadow: 0 10px 25px rgba(70,55,120,.2);
+      transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999;
+    }
+
+    #ended {
+      display: none; position: fixed; inset: 0; z-index: 10000; background: rgba(245,243,251,.97);
+      flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem;
+    }
+    #ended h2 { margin: 0 0 6px; }
+    #ended p { color: var(--muted); margin: 0 0 14px; max-width: 320px; }
+    #ended button {
+      padding: 10px 20px; font-size: 1rem; font-weight: 700; border: 1px solid #a9dcc0; border-radius: 12px;
+      background: #d5f2e3; color: #276a4b; cursor: pointer;
+    }
+
+    @media (max-width: 640px) {
+      .brand { display: none; }
+      .top-left { width: 100%; }
+      .me-pill { flex: 1; }
+      #my-name { max-width: none; flex: 1; }
+      .top-right { width: 100%; justify-content: space-between; }
+      #class-title { max-width: 45vw; }
+      .sub-bar { grid-template-columns: auto auto; row-gap: 4px; }
+      .sub-bar > #mode-pill { grid-column: 1 / -1; grid-row: 2; }
+      #page-info { white-space: nowrap; }
+    }
+
+    /* purple wordmark to match the logo */
+    .brand .w-c { color: #7d68d0; }
+    .brand .w-f { color: #a68ce6; }
+
+    .brand .w-role { color: #8d86ad; font-weight: 600; letter-spacing: 0; }
+    .top-bar .brand .w-role { font-size: .85em; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div id="reward-banner">⭐ 9 Awarded! Keep it up!</div>
+
+  <div id="ended">
+    <h2 id="ended-title">Class ended</h2>
+    <p id="ended-msg"></p>
+    <button onclick="location.reload()">Back to start</button>
+  </div>
+
+  <div id="join">
+    <div class="join-card">
+      <div class="brand-wrap">
+        <div class="logo" aria-label="LessonLab logo">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="56" height="56" rx="10" fill="#c9b8f6" stroke="#7d68d0" stroke-width="4"/>
+          <g fill="none" stroke="#1f1b3a" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 16 V44 H31"/>
+            <path d="M42 16 V39 Q42 44 47 44"/>
+          </g>
+        </svg>
+        </div>
+        <div class="brand"><span class="w-c">Lesson</span><span class="w-f">lab</span><span class="w-role"> Student</span></div>
+      </div>
+      <h2>Join your class</h2>
+      <p class="hint">Your teacher will give you the class code</p>
+      <input type="text" id="code" placeholder="CLASS CODE" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <input type="text" id="name" placeholder="Enter your full name" maxlength="40">
+      <div id="class-name"></div>
+      <div id="join-error"></div>
+      <button id="start-btn" onclick="joinClass()">Start Lesson</button>
+    </div>
+  </div>
+
+  <div id="viewer-container">
+    <div class="top-bar">
+      <div class="top-left">
+        <div class="brand-wrap">
+          <div class="logo" aria-label="LessonLab logo">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="56" height="56" rx="10" fill="#c9b8f6" stroke="#7d68d0" stroke-width="4"/>
+          <g fill="none" stroke="#1f1b3a" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 16 V44 H31"/>
+            <path d="M42 16 V39 Q42 44 47 44"/>
+          </g>
+        </svg>
+        </div>
+          <div class="brand"><span class="w-c">Lesson</span><span class="w-f">lab</span><span class="w-role"> Student</span></div>
+        </div>
+        <div class="me-pill" id="me-pill">
+          <span id="my-emoji" title="Your emoji"></span>
+          <span id="my-name"></span>
+          <span class="me-score" id="me-score"><span id="my-stars">0</span><small>9s</small></span>
+        </div>
+      </div>
+      <div class="top-right">
+        <span id="class-title"></span>
+        <span class="code-chip" id="class-code-chip" title="Class code"></span>
+        <span id="timer-pill" class="timer-pill" hidden></span>
+      </div>
+    </div>
+    <div class="sub-bar">
+      <div class="zoom-controls">
+        <button onclick="zoomBy(1/1.25)" title="Zoom out" aria-label="Zoom out">−</button>
+        <span id="zoom-display">100%</span>
+        <button onclick="zoomBy(1.25)" title="Zoom in" aria-label="Zoom in">+</button>
+        <button onclick="resetZoom()" title="Fit to screen" aria-label="Fit to screen">⤢</button>
+      </div>
+      <span id="mode-pill" class="status-pill pill-locked">🔒 Teacher Leading</span>
+      <div class="right-tools">
+        <span id="page-info">
+          <span id="page-label">No Booklet Loaded</span>
+          <span id="page-controls" hidden>Page <input id="page-input" type="number" min="1" inputmode="numeric" disabled aria-label="Page number" title="Type a page number and press Enter"> / <span id="page-total">0</span></span>
+        </span>
+        <div id="solo-controls" class="nav-btns">
+          <button onclick="studentChangePage(-1)">← Prev</button>
+          <button onclick="studentChangePage(1)">Next →</button>
+        </div>
+      </div>
+    </div>
+    <div class="canvas-scroll-area">
+      <div id="waiting-msg">⏳ Waiting for teacher to broadcast a booklet...</div>
+      <canvas id="student-canvas" style="display:none;"></canvas>
+    </div>
+  </div>
+
+  <script type="module">
+    // Lets the page be installed as an app (Edge: ... menu > Apps > Install this site as an app)
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, update, get, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAa-5f4Tkiw840rV2B7WKTz7-1f-9YFJa0",
+      authDomain: "classfocus.firebaseapp.com",
+      databaseURL: "https://classfocus-default-rtdb.firebaseio.com",
+      projectId: "classfocus",
+      storageBucket: "classfocus.firebasestorage.app",
+      messagingSenderId: "353877697764",
+      appId: "1:353877697764:web:56d66de988624e4b82f8f1",
+      measurementId: "G-K2N3N8J80Z"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let pdfDoc = null;
+    let currentPage = 1;
+    let isSoloWork = false;
+    let pageRendering = false;
+    let pageNumPending = null;
+
+    const canvas = document.getElementById('student-canvas');
+    const ctx = canvas.getContext('2d');
+    const modePill = document.getElementById('mode-pill');
+    const pageLabel = document.getElementById('page-label');
+    const pageControls = document.getElementById('page-controls');
+    const pageInput = document.getElementById('page-input');
+    const pageTotal = document.getElementById('page-total');
+    const soloControls = document.getElementById('solo-controls');
+    const waitingMsg = document.getElementById('waiting-msg');
+
+    const codeInput = document.getElementById('code');
+    const nameInput = document.getElementById('name');
+    const startBtn = document.getElementById('start-btn');
+    const joinError = document.getElementById('join-error');
+
+    /* ---------- class code helpers (must match the teacher page) ---------- */
+    const CODE_RE = /^[A-HJ-NP-Z2-9]{6}$/;
+    const cleanCode = (s) => String(s || '').toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, '').slice(0, 6);
+    const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
+
+    // Prefill from a link like ...?code=KX7P2 (or #KX7P2), otherwise from the last class used on this device
+    const fromLink = new URLSearchParams(location.search).get('code') || location.hash.replace('#', '');
+    let savedCode = '', savedName = '';
+    try { savedCode = localStorage.getItem('cf_student_code') || ''; savedName = localStorage.getItem('cf_student_name') || ''; } catch (_) {}
+    codeInput.value = cleanCode(fromLink) || cleanCode(savedCode);
+    nameInput.value = savedName;
+    const classNameEl = document.getElementById('class-name');
+    let lookupTimer = null;
+    function lookupClass() {
+      const c = cleanCode(codeInput.value);
+      classNameEl.textContent = '';
+      if (!CODE_RE.test(c)) return;
+      get(ref(db, `classes/${c}/meta/name`)).then((s) => {
+        if (cleanCode(codeInput.value) === c) classNameEl.textContent = s.exists() ? `✓ ${s.val()}` : '';
+      }).catch(() => {});
+    }
+    codeInput.addEventListener('input', () => {
+      codeInput.value = cleanCode(codeInput.value);
+      clearTimeout(lookupTimer); lookupTimer = setTimeout(lookupClass, 250);
+    });
+    setTimeout(lookupClass, 300);
+    [codeInput, nameInput].forEach((el) => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') window.joinClass(); }));
+
+    const setError = (msg) => { joinError.textContent = msg || ''; };
+
+    /* ---------- booklet rendering ---------- */
+    function updatePageUI(num) {
+      if (!pdfDoc) return;
+      pageLabel.hidden = true;
+      pageControls.hidden = false;
+      pageTotal.textContent = pdfDoc.numPages;
+      pageInput.max = pdfDoc.numPages;
+      pageInput.disabled = !isSoloWork;
+      if (document.activeElement !== pageInput) pageInput.value = num;
+    }
+    // In solo work, students can type a page number and press Enter
+    function goToTypedPage() {
+      if (!isSoloWork || !pdfDoc) { updatePageUI(currentPage); return; }
+      let n = Math.floor(Number(pageInput.value));
+      if (!Number.isFinite(n)) n = currentPage;
+      n = Math.min(pdfDoc.numPages, Math.max(1, n));
+      pageInput.value = n;
+      if (n !== currentPage) { currentPage = n; queueRender(n); }
+    }
+    pageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { goToTypedPage(); pageInput.blur(); } });
+    pageInput.addEventListener('change', goToTypedPage);
+    pageInput.addEventListener('focus', () => pageInput.select());
+
+    const scrollArea = document.querySelector('.canvas-scroll-area');
+    const zoomDisplay = document.getElementById('zoom-display');
+    const MIN_ZOOM = 1, MAX_ZOOM = 6;
+    const MAX_PIXELS = window.matchMedia('(pointer: coarse)').matches ? 16e6 : 28e6;   // phones/tablets have tighter canvas limits
+    let zoom = 1, pageRatio = 1.414, lastRendered = 0, zoomTimer = null;
+
+    const fitWidth = () => {
+      const cs = getComputedStyle(scrollArea);
+      return Math.max(200, scrollArea.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+    };
+    function sizeCanvasBox() {
+      const w = fitWidth() * zoom;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${Math.round(w * pageRatio)}px`;
+      zoomDisplay.textContent = `${Math.round(zoom * 100)}%`;
+      scrollArea.classList.toggle('zoomed', zoom > 1.001);
+    }
+
+    // The page is drawn at the zoom level on screen (and the screen's pixel density), so text stays sharp when zoomed in.
+    // It is drawn off-screen first and swapped in, so there is no blank flash while it re-draws.
+    function renderPage(num) {
+      if (!pdfDoc) return;
+      pageRendering = true;
+      pdfDoc.getPage(num).then((page) => {
+        const base = page.getViewport({ scale: 1 });
+        pageRatio = base.height / base.width;
+        if (num !== lastRendered) { scrollArea.scrollTop = 0; lastRendered = num; }
+        sizeCanvasBox();
+
+        const cssW = fitWidth() * zoom;
+        let scale = (cssW / base.width) * Math.min(window.devicePixelRatio || 1, 3);
+        scale = Math.max(scale, 1.5 * (cssW / base.width) / zoom);          // never softer than the fitted page at 1.5x
+        const px = base.width * scale * base.height * scale;
+        if (px > MAX_PIXELS) scale *= Math.sqrt(MAX_PIXELS / px);            // stay inside the browser's canvas limits
+        const viewport = page.getViewport({ scale });
+
+        const off = document.createElement('canvas');
+        off.width = Math.floor(viewport.width);
+        off.height = Math.floor(viewport.height);
+        page.render({ canvasContext: off.getContext('2d'), viewport }).promise.then(() => {
+          canvas.width = off.width;
+          canvas.height = off.height;
+          ctx.drawImage(off, 0, 0);
+          pageRendering = false;
+          if (pageNumPending !== null) {
+            const n = pageNumPending; pageNumPending = null;
+            renderPage(n);
+          }
+        }).catch(() => { pageRendering = false; });
+      });
+      updatePageUI(num);
+    }
+
+    function scheduleSharpRender() {
+      clearTimeout(zoomTimer);
+      zoomTimer = setTimeout(() => queueRender(currentPage), 160);
+    }
+
+    // Change the zoom around a point (defaults to the middle of the view). The page stretches instantly,
+    // then is redrawn sharply a moment later.
+    function setZoom(z, cx, cy) {
+      z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+      if (Math.abs(z - zoom) < 0.001) return;
+      const rect = scrollArea.getBoundingClientRect();
+      const ax = (cx ?? rect.left + rect.width / 2) - rect.left;
+      const ay = (cy ?? rect.top + rect.height / 2) - rect.top;
+      const r = z / zoom;
+      const px = scrollArea.scrollLeft + ax, py = scrollArea.scrollTop + ay;
+      zoom = z;
+      sizeCanvasBox();
+      scrollArea.scrollLeft = px * r - ax;
+      scrollArea.scrollTop = py * r - ay;
+      scheduleSharpRender();
+    }
+    window.zoomBy = (f) => setZoom(zoom * f);
+    window.resetZoom = () => { setZoom(1); scrollArea.scrollLeft = 0; };
+
+    // Trackpad pinch / ctrl + wheel
+    scrollArea.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      setZoom(zoom * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+    }, { passive: false });
+
+    // Two-finger pinch on touch screens
+    let pinch = null;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    scrollArea.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) pinch = { d: dist(e.touches), z: zoom };
+    }, { passive: true });
+    scrollArea.addEventListener('touchmove', (e) => {
+      if (pinch && e.touches.length === 2) {
+        e.preventDefault();
+        const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2, my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        setZoom(pinch.z * dist(e.touches) / pinch.d, mx, my);
+      }
+    }, { passive: false });
+    scrollArea.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinch = null; }, { passive: true });
+
+    // Drag to move around when zoomed in (mouse)
+    let drag = null;
+    scrollArea.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || zoom <= 1.001) return;
+      drag = { x: e.clientX, y: e.clientY, sl: scrollArea.scrollLeft, st: scrollArea.scrollTop };
+      scrollArea.classList.add('panning');
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!drag) return;
+      scrollArea.scrollLeft = drag.sl - (e.clientX - drag.x);
+      scrollArea.scrollTop = drag.st - (e.clientY - drag.y);
+    });
+    window.addEventListener('mouseup', () => { drag = null; scrollArea.classList.remove('panning'); });
+
+    // Re-draw at the right size when the window is resized or rotated
+    let resizeTimer = null, lastW = 0;
+    new ResizeObserver(() => {
+      if (!pdfDoc || scrollArea.clientWidth === lastW) return;
+      lastW = scrollArea.clientWidth;
+      sizeCanvasBox();
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => queueRender(currentPage), 150);
+    }).observe(scrollArea);
+
+    function queueRender(num) {
+      if (pageRendering) {
+        pageNumPending = num;
+      } else {
+        renderPage(num);
+      }
+    }
+
+    window.studentChangePage = function(delta) {
+      if (!isSoloWork || !pdfDoc) return;
+      if (currentPage + delta >= 1 && currentPage + delta <= pdfDoc.numPages) {
+        currentPage += delta;
+        queueRender(currentPage);
+      }
+    };
+
+    function loadBase64PDF(base64Data) {
+      const raw = atob(base64Data);
+      const rawLength = raw.length;
+      const array = new Uint8Array(new ArrayBuffer(rawLength));
+      for (let i = 0; i < rawLength; i++) {
+        array[i] = raw.charCodeAt(i);
+      }
+
+      pdfjsLib.getDocument({ data: array }).promise.then((doc) => {
+        pdfDoc = doc;
+        waitingMsg.style.display = 'none';
+        canvas.style.display = 'block';
+        renderPage(currentPage);
+      }).catch(err => {
+        waitingMsg.textContent = "Error loading document: " + err.message;
+      });
+    }
+
+    /* ---------- joining ---------- */
+    let ended = false;
+    let studentRef = null;
+
+    function endSession(title, msg) {
+      if (ended) return;
+      ended = true;
+      // don't leave a nameless "ghost" record behind when this tab closes later
+      if (studentRef) onDisconnect(studentRef).cancel().catch(() => {});
+      document.getElementById('ended-title').textContent = title;
+      document.getElementById('ended-msg').textContent = msg;
+      document.getElementById('ended').style.display = 'flex';
+    }
+
+    class UserError extends Error {}
+
+    // Same set the teacher page uses to colour each pill
+    const EMOJIS = ['🦊','🐼','🐸','🦄','🐙','🦁','🐯','🐨','🐵','🐧','🦉','🐢','🦖','🐳','🦋','🐝','🐞','🦀','🐬','🦒','🐘','🦓','🐰','🐻','🐷','🐮','🐔','🦆','🦜','🐠','🦈','🐊','🦔','🦦','🦥','🐲','👽','🤖','👾','🎃','⚡','🔥','🌈','🍕','🍩','🍉','🍓','🚀','🛸','⚽','🏀','🎸','🎨','🧁','🍔','🌮','🪐','🌵','🍄','💎'];
+
+    /* ---------- class timer ---------- */
+    const timerPill = document.getElementById('timer-pill');
+    let serverOffset = 0, timerData = null, chimedFor = null, timerWatching = false;
+    let chimeCtx = null;
+    function chime() {
+      try {
+        chimeCtx = chimeCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const t0 = chimeCtx.currentTime;
+        [0, 0.9].forEach((o) => [783.99, 659.25, 523.25].forEach((f, i) => {
+          const osc = chimeCtx.createOscillator(), g = chimeCtx.createGain(), t = t0 + o + i * 0.2;
+          osc.type = 'sine'; osc.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.18, t + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+          osc.connect(g); g.connect(chimeCtx.destination);
+          osc.start(t); osc.stop(t + 1.25);
+        }));
+      } catch (_) {}
+    }
+    const fmtTime = (ms) => {
+      const t = Math.max(0, Math.ceil(ms / 1000));
+      const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+      const pad = (n) => String(n).padStart(2, '0');
+      return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    };
+    function renderTimer() {
+      timerPill.className = 'timer-pill';
+      if (!timerData) { timerPill.hidden = true; return; }
+      timerPill.hidden = false;
+      if (timerData.state === 'paused') {
+        timerPill.textContent = '⏸ ' + fmtTime(timerData.remaining);
+        timerPill.classList.add('paused');
+        return;
+      }
+      const left = timerData.endsAt - (Date.now() + serverOffset);
+      if (left <= 0) {
+        if (-left > 120000) { timerPill.hidden = true; return; }   // stop showing it after two minutes
+        timerPill.textContent = "⏰ Time's up!";
+        timerPill.classList.add('done');
+        if (chimedFor !== timerData.endsAt) { chimedFor = timerData.endsAt; if (-left < 6000) chime(); }
+        return;
+      }
+      timerPill.textContent = '⏱ ' + fmtTime(left);
+      if (left <= 10000) timerPill.classList.add('low');
+    }
+    function startTimerWatch(base) {
+      onValue(ref(db, '.info/serverTimeOffset'), (snap) => { serverOffset = Number(snap.val()) || 0; });
+      onValue(ref(db, `${base}/session/timer`), (snap) => { timerData = snap.val(); renderTimer(); });
+      if (!timerWatching) { timerWatching = true; setInterval(renderTimer, 250); }
+    }
+
+    /* ---------- pill colour: same recipe as the teacher page, so it matches the teacher's view ---------- */
+    function hashString(str) {
+      let h = 2166136261;
+      for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+      return h >>> 0;
+    }
+    const EMOJI_HUE = {
+      '🦊':24,'🐼':215,'🐸':120,'🦄':290,'🐙':340,'🦁':40,'🐯':30,'🐨':210,'🐵':28,'🐧':205,'🦉':32,'🐢':140,
+      '🦖':150,'🐳':210,'🦋':200,'🐝':48,'🐞':5,'🦀':8,'🐬':198,'🦒':42,'🐘':215,'🦓':235,'🐰':330,'🐻':25,
+      '🐷':345,'🐮':195,'🐔':10,'🦆':55,'🦜':130,'🐠':35,'🦈':205,'🐊':125,'🦔':30,'🦦':28,'🦥':40,'🐲':135,
+      '👽':105,'🤖':215,'👾':275,'🎃':28,'⚡':50,'🔥':15,'🌈':300,'🍕':35,'🍩':335,'🍉':350,'🍓':355,'🚀':220,
+      '🛸':170,'⚽':230,'🏀':24,'🎸':18,'🎨':265,'🧁':320,'🍔':32,'🌮':45,'🪐':285,'🌵':125,'🍄':5,'💎':195
+    };
+    function pillColors(name, emoji) {
+      const key = String(name).toLowerCase().trim();
+      const h2 = hashString(key + '#shade');
+      const base = EMOJI_HUE[emoji] ?? (hashString(key) % 360);
+      const hue = (base + ((h2 & 31) - 15) + 360) % 360;
+      const sat = 62 + ((h2 >>> 5) & 31);
+      const light = 87 + ((h2 >>> 10) & 7);
+      return [`hsl(${hue} ${sat}% ${light}%)`, `hsl(${hue} ${Math.max(40, sat - 14)}% ${light - 13}%)`];
+    }
+    const myName = document.getElementById('my-name');
+    const myStars = document.getElementById('my-stars');
+    const meScore = document.getElementById('me-score');
+    function paintMe(name, emoji, stars, pop) {
+      myName.textContent = name;
+      document.getElementById('my-emoji').textContent = emoji;
+      const [bg, bd] = pillColors(name, emoji);
+      const pill = document.getElementById('me-pill');
+      pill.style.background = bg; pill.style.borderColor = bd;
+      if (String(stars) !== myStars.textContent) {
+        myStars.textContent = stars;
+        if (pop) { meScore.classList.remove('pop'); void meScore.offsetWidth; meScore.classList.add('pop'); }
+      }
+    }
+
+    window.joinClass = async function() {
+      const studentName = nameInput.value.trim();
+      const code = cleanCode(codeInput.value);
+      setError('');
+      if (!CODE_RE.test(code)) return setError('Class codes are 6 characters, like KX7P2.');
+      if (!studentName) return setError('Please enter your name.');
+
+      startBtn.disabled = true;
+      startBtn.textContent = 'Joining…';
+
+      try {
+        const base = `classes/${code}`;
+
+        // The class must exist and be from today
+        const meta = (await get(ref(db, `${base}/meta`))).val();
+        if (!meta) throw new UserError("We couldn't find that class. Check the code with your teacher.");
+        if (meta.day !== todayStr()) throw new UserError("Your teacher hasn't opened this class yet today. Try again in a moment.");
+
+        const safeId = studentName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        studentRef = ref(db, `${base}/students/${safeId}`);
+
+        // Coming back after dropping out? Keep the 9s they already earned.
+        const existing = (await get(studentRef)).val();
+
+        // Their emoji: kept in the database record, remembered in this browser, otherwise a new random one
+        let myEmoji = '';
+        try { myEmoji = localStorage.getItem('cf_emoji_' + safeId) || ''; } catch (_) {}
+        if (!EMOJIS.includes(myEmoji)) myEmoji = '';
+        myEmoji = (existing && EMOJIS.includes(existing.emoji) && existing.emoji) || myEmoji || EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+
+        if (existing) {
+          await update(studentRef, { name: studentName, status: 'active', emoji: myEmoji });
+        } else {
+          await set(studentRef, { name: studentName, status: 'active', awayCount: 0, stars: 0, emoji: myEmoji });
+        }
+        paintMe(studentName, myEmoji, existing?.stars || 0, false);
+        document.getElementById('class-code-chip').textContent = code;
+
+        try {
+          localStorage.setItem('cf_student_code', code); localStorage.setItem('cf_student_name', studentName);
+          localStorage.setItem('cf_emoji_' + safeId, myEmoji);
+        } catch (_) {}
+
+        document.getElementById('join').style.display = 'none';
+        document.getElementById('viewer-container').style.display = 'flex';
+
+        const currentStatus = () => (document.hidden || !document.hasFocus()) ? 'away' : 'active';
+        const updateStatus = (status) => { if (!ended) update(studentRef, { status }); };
+
+        // Registered on every (re)connection so a brief wifi drop doesn't leave them stuck as "offline"
+        onValue(ref(db, '.info/connected'), (snap) => {
+          if (!snap.val() || ended) return;
+          onDisconnect(studentRef).update({ status: 'offline' });
+          updateStatus(currentStatus());
+        });
+
+        // Focus Monitoring
+        document.addEventListener('visibilitychange', () => updateStatus(document.hidden ? 'away' : 'active'));
+        window.addEventListener('blur', () => updateStatus('away'));
+        window.addEventListener('focus', () => updateStatus('active'));
+
+        // Class cleared (new class started, or midnight reset)
+        onValue(ref(db, `${base}/meta`), (snap) => {
+          if (!snap.exists()) endSession('Class closed', 'Your teacher has deleted this class.');
+          else document.getElementById('class-title').textContent = snap.val().name || 'Class';
+        });
+
+        // Teacher removed this student
+        onValue(studentRef, async (snap) => {
+          if (!snap.exists() && !ended) {
+            const stillThere = (await get(ref(db, `${base}/meta`))).exists();
+            if (stillThere) endSession('Removed from class', 'Your teacher removed you, or the lesson was reset. Press the button to rejoin.');
+            else endSession('Class closed', 'Your teacher has deleted this class.');
+          }
+        });
+
+        // Listen for Streamed PDF from Teacher
+        onValue(ref(db, `${base}/session/activePdfData`), (snap) => {
+          const base64Data = snap.val();
+          if (base64Data) {
+            loadBase64PDF(base64Data);
+          }
+        });
+
+        // Class timer (the teacher starts it; the clock is based on the database server's time)
+        startTimerWatch(base);
+
+        // Solo Mode Listener
+        onValue(ref(db, `${base}/session/soloWork`), (snap) => {
+          isSoloWork = !!snap.val();
+          updatePageUI(currentPage);
+          if (isSoloWork) {
+            modePill.className = 'status-pill pill-solo';
+            modePill.textContent = '🔓 Solo work';
+            soloControls.style.display = 'flex';
+          } else {
+            modePill.className = 'status-pill pill-locked';
+            modePill.textContent = '🔒 Teacher Leading';
+            soloControls.style.display = 'none';
+          }
+        });
+
+        // Synchronized Page Turns
+        onValue(ref(db, `${base}/session/currentPage`), (snap) => {
+          const targetPage = snap.val();
+          if (!isSoloWork && targetPage && targetPage !== currentPage) {
+            currentPage = targetPage;
+            queueRender(currentPage);
+          }
+        });
+
+        // Confetti & Star Rewards (start from the 9s they already have so rejoining doesn't trigger confetti)
+        let currentStars = existing?.stars || 0;
+        onValue(studentRef, (snap) => {
+          const val = snap.val();
+          if (val) paintMe(val.name || studentName, val.emoji || myEmoji, val.stars || 0, val.stars > currentStars);
+          if (val && val.stars > currentStars) {
+            currentStars = val.stars;
+            triggerCelebration();
+          } else if (val && val.stars < currentStars) {
+            currentStars = val.stars;   // teacher corrected their 9s downwards
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        setError(err instanceof UserError ? err.message : 'Could not join: ' + err.message);
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start Lesson';
+      }
+    };
+
+    function triggerCelebration() {
+      confetti({ particleCount: 110, spread: 75, origin: { y: 0.6 } });
+      const banner = document.getElementById('reward-banner');
+      banner.style.top = '20px';
+      setTimeout(() => { banner.style.top = '-100px'; }, 3500);
+    }
+  </script>
+</body>
+</html>
