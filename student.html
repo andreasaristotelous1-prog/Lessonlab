@@ -59,7 +59,8 @@
       transition: border-color .15s, box-shadow .15s;
     }
     .join-card input:focus { border-color: #b9a6f0; box-shadow: 0 0 0 3px rgba(185,166,240,.25); background: #fff; }
-    #code { text-transform: uppercase; letter-spacing: .3em; text-align: center; font-weight: 800; }
+    #code { text-transform: uppercase; }
+    #code::placeholder { text-transform: none; }
     #class-name { min-height: 1.4em; color: #2c7a5a; font-weight: 700; text-align: center; margin-top: 2px; }
     #join-error { min-height: 1.4em; margin: 2px 0 4px; color: #b3414f; font-size: .92rem; font-weight: 600; text-align: center; }
     #start-btn {
@@ -191,6 +192,22 @@
 
     .brand .w-role { color: #8d86ad; font-weight: 600; letter-spacing: 0; }
     .top-bar .brand .w-role { font-size: .85em; }
+  
+    /* ===== full-screen class code ===== */
+    #code-screen { position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px;
+      background: radial-gradient(900px 600px at 15% 0%, #5a46b0 0, transparent 60%), radial-gradient(800px 600px at 100% 100%, #2f5f9c 0, transparent 55%), #2a2347;
+      color: #fff; font-family: 'Outfit', system-ui, sans-serif; cursor: pointer; }
+    #code-screen[hidden] { display: none; }
+    #code-screen .cs-inner { display: flex; flex-direction: column; align-items: center; gap: min(2.2vh, 18px); max-width: 100%; }
+    #code-screen .cs-step { font-size: clamp(1.1rem, 3.4vw, 2.2rem); font-weight: 600; opacity: .85; }
+    #code-screen .cs-addr { font-size: clamp(1.5rem, 6.4vw, 4.4rem); font-weight: 800; letter-spacing: .01em; background: rgba(255,255,255,.14); border: 2px dashed rgba(255,255,255,.55);
+      border-radius: 20px; padding: .18em .6em; max-width: 100%; overflow-wrap: anywhere; }
+    #code-screen .cs-code { font-size: min(15vw, 34vh); line-height: 1; font-weight: 800; letter-spacing: .06em; padding-left: .06em; max-width: 100%; }
+    #code-screen .cs-xp { font-size: clamp(.85rem, 2.2vw, 1.3rem); font-weight: 800; letter-spacing: .12em; padding: .35em 1em; border-radius: 99px; color: #1f1b3a;
+      background: linear-gradient(90deg,#ff7aa5,#ffc46b,#ffe980,#7ae5a7,#6cc8ff,#a590ff); }
+    #code-screen .cs-hint { font-size: clamp(.8rem, 1.8vw, 1.1rem); opacity: .6; margin-top: 1vh; }
+    #code-screen #cs-close { position: absolute; top: 14px; right: 18px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.16); color: #fff; font-size: 1.4rem; cursor: pointer; }
+    #code-screen #cs-close:hover { background: rgba(255,255,255,.28); }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -223,8 +240,9 @@
       </div>
       <h2>Join your class</h2>
       <p class="hint">Your teacher will give you the class code</p>
-      <input type="text" id="code" placeholder="CLASS CODE" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false">
-      <input type="text" id="name" placeholder="Enter your full name" maxlength="40">
+      <input type="text" id="code" placeholder="Enter class code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <input type="text" id="name" placeholder="Enter your first name" maxlength="30" autocomplete="off">
+      <input type="text" id="initial" placeholder="Enter your last name initial" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false">
       <div id="class-name"></div>
       <div id="join-error"></div>
       <button id="start-btn" onclick="joinClass()">Start Lesson</button>
@@ -254,7 +272,7 @@
       </div>
       <div class="top-right">
         <span id="class-title"></span>
-        <span class="code-chip" id="class-code-chip" title="Class code"></span>
+        <span class="code-chip" id="class-code-chip" title="Click to show the code full screen" style="cursor:pointer"></span>
         <span id="timer-pill" class="timer-pill" hidden></span>
       </div>
     </div>
@@ -324,6 +342,8 @@
 
     const codeInput = document.getElementById('code');
     const nameInput = document.getElementById('name');
+    const initialInput = document.getElementById('initial');
+    initialInput.addEventListener('input', () => { initialInput.value = initialInput.value.replace(/[^\p{L}]/gu, '').toUpperCase().slice(0, 1); });
     const startBtn = document.getElementById('start-btn');
     const joinError = document.getElementById('join-error');
 
@@ -337,7 +357,7 @@
     let savedCode = '', savedName = '';
     try { savedCode = localStorage.getItem('cf_student_code') || ''; savedName = localStorage.getItem('cf_student_name') || ''; } catch (_) {}
     codeInput.value = cleanCode(fromLink) || cleanCode(savedCode);
-    nameInput.value = savedName;
+    { const m = /^(.*\S)\s+(\S)$/u.exec(savedName); nameInput.value = m ? m[1] : savedName; initialInput.value = m ? m[2] : ''; }
     const classNameEl = document.getElementById('class-name');
     let lookupTimer = null;
     function lookupClass() {
@@ -353,7 +373,7 @@
       clearTimeout(lookupTimer); lookupTimer = setTimeout(lookupClass, 250);
     });
     setTimeout(lookupClass, 300);
-    [codeInput, nameInput].forEach((el) => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') window.joinClass(); }));
+    [codeInput, nameInput, initialInput].forEach((el) => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') window.joinClass(); }));
 
     const setError = (msg) => { joinError.textContent = msg || ''; };
 
@@ -646,11 +666,12 @@
     }
 
     window.joinClass = async function() {
-      const studentName = nameInput.value.trim();
+      const firstName = nameInput.value.trim(), lastInitial = initialInput.value.trim().toUpperCase();
+      const studentName = (firstName + ' ' + lastInitial).trim();
       const code = cleanCode(codeInput.value);
       setError('');
       if (!CODE_RE.test(code)) return setError('Class codes are 6 characters, like KX7P2.');
-      if (!studentName) return setError('Please enter your name.');
+      if (!firstName || !lastInitial) return setError('Please enter your first name and the first letter of your last name.');
 
       startBtn.disabled = true;
       startBtn.textContent = 'Joining…';
@@ -783,5 +804,45 @@
       setTimeout(() => { banner.style.top = '-100px'; }, 3500);
     }
   </script>
+
+  <div id="code-screen" hidden role="dialog" aria-modal="true" aria-label="Class code">
+    <button type="button" id="cs-close" aria-label="Close">✕</button>
+    <div class="cs-inner">
+      <div class="cs-xp" id="cs-xp" hidden>🧪 EXPERIMENT VERSION</div>
+      <div class="cs-step">Go to</div>
+      <div class="cs-addr" id="cs-addr"></div>
+      <div class="cs-step">and enter the class code</div>
+      <div class="cs-code" id="cs-code"></div>
+      <div class="cs-hint">Tap anywhere or press Esc to close</div>
+    </div>
+  </div>
+  <script>
+    // The student page address shown on the full-screen code (the experiment build changes this one line)
+    var STUDENT_PAGE = 'student';
+    (function () {
+      var el = document.getElementById('code-screen');
+      function address() {
+        var dir = location.pathname.replace(/[^\/]*$/, '');
+        var tail = location.protocol === 'file:' ? STUDENT_PAGE + '.html' : STUDENT_PAGE;
+        return (location.host || '') ? location.host + dir + tail : tail;
+      }
+      function hide() {
+        el.hidden = true;
+        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
+      }
+      window.showCodeScreen = function (code) {
+        if (!code) return;
+        document.getElementById('cs-code').textContent = code;
+        document.getElementById('cs-addr').textContent = address();
+        document.getElementById('cs-xp').hidden = STUDENT_PAGE.indexOf('p2p') < 0;
+        el.hidden = false;
+        try { if (el.requestFullscreen) el.requestFullscreen().catch(function () {}); } catch (e) {}
+      };
+      el.addEventListener('click', hide);
+      document.addEventListener('keydown', function (e) { if (!el.hidden && e.key === 'Escape') hide(); });
+      document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && !el.hidden) el.hidden = true; });
+    })();
+  </script>
+  <script>document.getElementById('class-code-chip').addEventListener('click', function () { window.showCodeScreen(this.textContent.trim()); });</script>
 </body>
 </html>
