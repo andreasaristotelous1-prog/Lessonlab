@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lessonlab P2P Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; padding: 20px; background: #f4f1fb; color: #2a2347; font-family: 'Outfit', system-ui, Segoe UI, Arial, sans-serif; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 1.7rem; letter-spacing: -.02em; }
+  h1 span { color: #7d68d0; }
+  .sub { margin: 0 0 18px; color: #7a7396; }
+  .card { background: #fff; border: 1px solid #e4def5; border-radius: 18px; padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 8px 26px rgba(95,70,180,.08); }
+  .card h2 { margin: 0 0 10px; font-size: 1.1rem; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button { font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 12px; border: 1.5px solid #dcd2f7; background: #f1ecfd; color: #4b3a8f; cursor: pointer; }
+  button.primary { background: #7d68d0; color: #fff; border-color: #7d68d0; }
+  button:disabled { opacity: .5; cursor: default; }
+  input[type=text] { font: inherit; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; padding: 10px 12px; border: 1.5px solid #ddd8ee; border-radius: 10px; width: 160px; text-align: center; }
+  .code { font-size: 2rem; font-weight: 700; letter-spacing: .25em; color: #4b3a8f; background: #f1ecfd; border: 1.5px dashed #c9b8f6; border-radius: 14px; padding: 8px 16px; display: inline-block; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .82rem; font-weight: 600; background: #eee; }
+  .ok { background: #d9f3e6; color: #1f6b46; } .warn { background: #fff0cf; color: #8a5a00; } .bad { background: #fde0e3; color: #a3303d; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee9f8; }
+  th { color: #7a7396; font-weight: 600; }
+  .bar { height: 12px; background: #ece8f7; border-radius: 99px; overflow: hidden; margin: 8px 0 4px; }
+  .bar > i { display: block; height: 100%; width: 0; background: #7d68d0; transition: width .1s; }
+  .log { font-family: ui-monospace, Consolas, monospace; font-size: .8rem; background: #faf9fd; border: 1px solid #ece8f7; border-radius: 10px; padding: 8px 10px; max-height: 160px; overflow: auto; white-space: pre-wrap; }
+  .muted { color: #7a7396; font-size: .9rem; }
+  [hidden] { display: none !important; }
+  iframe, img.pv { width: 100%; height: 360px; border: 1px solid #ece8f7; border-radius: 10px; background: #fff; object-fit: contain; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span>Lessonlab</span> peer-to-peer test</h1>
+  <p class="sub">A small experiment. No database is used: the file goes straight from the teacher's device to each student's device.</p>
+
+  <div class="card" id="pick">
+    <h2>Which device is this?</h2>
+    <div class="row">
+      <button class="primary" id="b-host">I'm the teacher (host)</button>
+      <button id="b-join">I'm a student (join)</button>
+    </div>
+    <p class="muted" style="margin-bottom:0">Open this page on two devices, ideally on the school wifi, one as each.</p>
+  </div>
+
+  <!-- TEACHER -->
+  <div id="host" hidden>
+    <div class="card">
+      <h2>Teacher</h2>
+      <div class="row"><span class="muted">Share this code:</span> <span class="code" id="h-code">······</span> <span class="pill warn" id="h-sig">connecting…</span></div>
+      <p class="muted">Students open this page, choose "I'm a student", and type the code.</p>
+      <div class="row"><span class="muted">Screen:</span> <span class="pill warn" id="h-wake">checking…</span></div>
+    </div>
+    <div class="card">
+      <h2>Send a file</h2>
+      <div class="row">
+        <input type="file" id="h-file">
+        <button class="primary" id="h-send" disabled>Send to everyone</button>
+        <button id="h-ping" disabled>Ping everyone</button>
+      </div>
+      <div class="bar"><i id="h-bar"></i></div>
+      <div class="muted" id="h-prog">Nothing sent yet.</div>
+    </div>
+    <div class="card">
+      <h2>Students connected: <span id="h-count">0</span></h2>
+      <table><thead><tr><th>Student</th><th>Link type</th><th>Received</th><th>Ping</th></tr></thead><tbody id="h-rows"></tbody></table>
+      <p class="muted" style="margin-bottom:0">Link type: <b>direct</b> means a true peer-to-peer link. <b>relay</b> means the traffic is going through a server, which is the case that school firewalls tend to cause.</p>
+    </div>
+  </div>
+
+  <!-- STUDENT -->
+  <div id="join" hidden>
+    <div class="card">
+      <h2>Student</h2>
+      <div class="row">
+        <input type="text" id="j-code" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false">
+        <button class="primary" id="j-go">Join</button>
+        <span class="pill warn" id="j-state">not connected</span>
+      </div>
+      <p class="muted" id="j-info" style="margin-bottom:0"></p>
+    </div>
+    <div class="card">
+      <h2>Received</h2>
+      <div class="bar"><i id="j-bar"></i></div>
+      <div class="muted" id="j-prog">Waiting for the teacher to send a file.</div>
+      <div id="j-view" style="margin-top:12px" hidden></div>
+    </div>
+  </div>
+
+  <div class="card"><h2>Log</h2><div class="log" id="log"></div></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const PREFIX = 'lessonlab-p2p-';
+  const CHUNK = 16 * 1024;
+  const logEl = $('log');
+  const log = (m) => { logEl.textContent += new Date().toLocaleTimeString() + '  ' + m + '\n'; logEl.scrollTop = logEl.scrollHeight; };
+  const fmtMB = (b) => (b / 1048576).toFixed(2) + ' MB';
+  const rand = (n) => Array.from(crypto.getRandomValues(new Uint32Array(n)), (x) => ALPHA[x % ALPHA.length]).join('');
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  if (!window.Peer) { log('The PeerJS library did not load. Check the internet connection.'); }
+
+  // Work out whether a link is truly direct or going through a relay server
+  async function linkType(conn) {
+    try {
+      const pc = conn.peerConnection;
+      const stats = await pc.getStats();
+      let pairId = null;
+      stats.forEach((s) => { if (s.type === 'transport' && s.selectedCandidatePairId) pairId = s.selectedCandidatePairId; });
+      let pair = null;
+      stats.forEach((s) => { if (s.type === 'candidate-pair' && (s.id === pairId || (!pairId && s.nominated && s.state === 'succeeded'))) pair = s; });
+      if (!pair) return 'unknown';
+      const l = stats.get(pair.localCandidateId), r = stats.get(pair.remoteCandidateId);
+      const types = [l && l.candidateType, r && r.candidateType];
+      return types.includes('relay') ? 'relay' : 'direct';
+    } catch (_) { return 'unknown'; }
+  }
+
+  $('b-host').onclick = () => { $('pick').hidden = true; $('host').hidden = false; startHost(); };
+  $('b-join').onclick = () => { $('pick').hidden = true; $('join').hidden = false; };
+
+  /* ---------------- keep the teacher's screen awake ---------------- */
+  let wakeLock = null;
+  function wakeState(text, kind) { const el = $('h-wake'); if (el) { el.textContent = text; el.className = 'pill ' + kind; } }
+  async function keepAwake() {
+    if (!('wakeLock' in navigator)) { wakeState('not supported on this browser', 'bad'); log('Screen wake lock is not supported here.'); return; }
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeState('kept awake', 'ok');
+      log('Screen is being kept awake.');
+      wakeLock.addEventListener('release', () => { wakeLock = null; if (document.hidden) wakeState('paused while this tab is hidden', 'warn'); else wakeState('released', 'warn'); });
+    } catch (e) {
+      wakeState('could not keep awake (' + (e.name || 'error') + ')', 'bad');
+      log('Wake lock refused: ' + (e.message || e.name) + '. Low battery, battery saver or a school policy can cause this.');
+    }
+  }
+  // The browser drops the lock whenever the tab is hidden, so ask again when the teacher comes back
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && $('host') && !$('host').hidden && !wakeLock) keepAwake(); });
+
+  /* ---------------- TEACHER ---------------- */
+  const students = new Map();   // conn.peer -> { conn, row, name, got, ping }
+  function startHost() {
+    keepAwake();
+    const code = rand(6);
+    const peer = new Peer(PREFIX + code);
+    peer.on('open', () => { $('h-code').textContent = code; const s = $('h-sig'); s.textContent = 'ready'; s.className = 'pill ok'; log('Ready. Code ' + code); });
+    peer.on('error', (e) => { log('Error: ' + e.type + ' ' + (e.message || '')); const s = $('h-sig'); s.textContent = 'error: ' + e.type; s.className = 'pill bad'; });
+    peer.on('disconnected', () => { const s = $('h-sig'); s.textContent = 'lost the introduction server'; s.className = 'pill warn'; });
+    peer.on('connection', (conn) => {
+      conn.on('open', async () => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td></td><td>…</td><td>-</td><td>-</td>';
+        $('h-rows').appendChild(tr);
+        const st = { conn, row: tr, name: 'Student ' + (students.size + 1), got: '-', ping: '-' };
+        students.set(conn.peer, st);
+        render();
+        log('Joined: ' + st.name);
+        await sleep(800);
+        st.link = await linkType(conn); render(); log(st.name + ' link: ' + st.link);
+      });
+      conn.on('data', (m) => {
+        const st = students.get(conn.peer); if (!st || !m) return;
+        if (m.t === 'hello') { st.name = String(m.name || st.name).slice(0, 30); render(); }
+        if (m.t === 'ack') { st.ping = Math.round(performance.now() - m.sent) + ' ms'; render(); }
+        if (m.t === 'done') { st.got = fmtMB(m.bytes) + ' in ' + m.secs.toFixed(1) + ' s'; render(); log(st.name + ' got the file in ' + m.secs.toFixed(1) + ' s'); }
+      });
+      conn.on('close', () => { students.delete(conn.peer); render(); log('Left.'); });
+    });
+
+    $('h-file').onchange = () => { $('h-send').disabled = !$('h-file').files.length || !students.size; };
+    $('h-ping').onclick = () => { students.forEach((s) => s.conn.send({ t: 'ping', sent: performance.now() })); };
+    $('h-send').onclick = sendFile;
+  }
+  function render() {
+    $('h-count').textContent = students.size;
+    $('h-send').disabled = !$('h-file').files.length || !students.size;
+    $('h-ping').disabled = !students.size;
+    students.forEach((s) => {
+      const c = s.row.children;
+      c[0].textContent = s.name;
+      c[1].innerHTML = s.link ? '<span class="pill ' + (s.link === 'direct' ? 'ok' : s.link === 'relay' ? 'bad' : 'warn') + '">' + s.link + '</span>' : '…';
+      c[2].textContent = s.got; c[3].textContent = s.ping;
+    });
+  }
+  async function sendFile() {
+    const f = $('h-file').files[0]; if (!f || !students.size) return;
+    const buf = new Uint8Array(await f.arrayBuffer());
+    const total = Math.ceil(buf.length / CHUNK);
+    const targets = [...students.values()];
+    targets.forEach((s) => { s.got = 'receiving…'; });
+    render();
+    const t0 = performance.now();
+    log('Sending ' + f.name + ' (' + fmtMB(buf.length) + ') to ' + targets.length + ' student(s)');
+    targets.forEach((s) => s.conn.send({ t: 'meta', name: f.name, type: f.type, size: buf.length, chunks: total }));
+    for (let i = 0; i < total; i++) {
+      const piece = buf.slice(i * CHUNK, (i + 1) * CHUNK);
+      for (const s of targets) {
+        const dc = s.conn.dataChannel;
+        while (dc && dc.bufferedAmount > 1048576) await sleep(10);   // don't flood a slow device
+        s.conn.send({ t: 'c', i, d: piece });
+      }
+      if (i % 20 === 0 || i === total - 1) {
+        $('h-bar').style.width = ((i + 1) / total * 100) + '%';
+        $('h-prog').textContent = 'Sent ' + (i + 1) + ' of ' + total + ' pieces';
+        await sleep(0);
+      }
+    }
+    targets.forEach((s) => s.conn.send({ t: 'end' }));
+    const secs = (performance.now() - t0) / 1000;
+    $('h-prog').textContent = 'All pieces sent in ' + secs.toFixed(1) + ' s (' + fmtMB(buf.length * targets.length) + ' uploaded in total).';
+    log('Finished sending in ' + secs.toFixed(1) + ' s');
+  }
+
+  /* ---------------- STUDENT ---------------- */
+  $('j-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+  $('j-go').onclick = () => {
+    const code = $('j-code').value.trim().toUpperCase();
+    if (code.length !== 6) { $('j-info').textContent = 'The code is 6 characters.'; return; }
+    $('j-go').disabled = true;
+    const peer = new Peer();
+    peer.on('error', (e) => { log('Error: ' + e.type); setState('error: ' + e.type, 'bad'); $('j-go').disabled = false; });
+    peer.on('open', () => {
+      setState('connecting…', 'warn');
+      const conn = peer.connect(PREFIX + code, { reliable: true, serialization: 'binary' });
+      const timeout = setTimeout(() => { if (!conn.open) { setState('could not connect', 'bad'); $('j-info').textContent = 'No direct link could be made. This usually means a network or firewall is blocking peer-to-peer traffic.'; $('j-go').disabled = false; } }, 20000);
+      conn.on('open', async () => {
+        clearTimeout(timeout);
+        setState('connected', 'ok');
+        conn.send({ t: 'hello', name: 'Student ' + rand(2) });
+        await sleep(800);
+        const lt = await linkType(conn);
+        $('j-info').textContent = 'Link type: ' + lt + (lt === 'relay' ? ' (traffic is going through a relay server)' : '');
+        log('Connected. Link type: ' + lt);
+      });
+      conn.on('close', () => { setState('disconnected', 'bad'); });
+      let meta = null, parts = [], got = 0, t0 = 0;
+      conn.on('data', (m) => {
+        if (!m) return;
+        if (m.t === 'ping') { conn.send({ t: 'ack', sent: m.sent }); log('Ping from teacher'); }
+        if (m.t === 'meta') { meta = m; parts = new Array(m.chunks); got = 0; t0 = performance.now(); $('j-view').hidden = true; log('Receiving ' + m.name + ' (' + fmtMB(m.size) + ')'); }
+        if (m.t === 'c' && meta) {
+          parts[m.i] = m.d; got++;
+          $('j-bar').style.width = (got / meta.chunks * 100) + '%';
+          $('j-prog').textContent = 'Received ' + got + ' of ' + meta.chunks + ' pieces';
+        }
+        if (m.t === 'end' && meta) {
+          const secs = (performance.now() - t0) / 1000;
+          const ok = got === meta.chunks;
+          const blob = new Blob(parts.filter(Boolean), { type: meta.type || 'application/octet-stream' });
+          $('j-prog').textContent = (ok ? 'Complete: ' : 'INCOMPLETE: ') + meta.name + ', ' + fmtMB(blob.size) + ' in ' + secs.toFixed(1) + ' s (' + (blob.size / 1048576 / Math.max(secs, 0.01)).toFixed(2) + ' MB/s)';
+          log($('j-prog').textContent);
+          conn.send({ t: 'done', bytes: blob.size, secs });
+          const url = URL.createObjectURL(blob), v = $('j-view');
+          v.hidden = false;
+          v.innerHTML = /^image\//.test(blob.type) ? '<img class="pv" src="' + url + '">' : /pdf$/.test(blob.type) ? '<iframe src="' + url + '"></iframe>' : '<a href="' + url + '" download="' + meta.name.replace(/"/g, '') + '">Download ' + meta.name.replace(/</g, '') + '</a>';
+        }
+      });
+    });
+  };
+  // A link like p2p-test.html?join=ABC123 opens straight into student mode and joins that code
+  (function autoJoin() {
+    const c = (new URLSearchParams(location.search).get('join') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (c.length === 6) { $('b-join').click(); $('j-code').value = c; setTimeout(() => $('j-go').click(), 300 + Math.random() * 1500); }
+  })();
+  function setState(t, k) { const s = $('j-state'); s.textContent = t; s.className = 'pill ' + k; }
+})();
+</script>
+</body>
+</html>
