@@ -909,6 +909,7 @@
         <div class="roster-actions">
           <button id="edit-students" class="btn" title="Rename students, fix 9s or remove students">✎ Edit</button>
           <button id="sound-btn" class="btn" onclick="toggleSound()">🔊 <span class="long">Sound on</span><span class="short">On</span></button>
+          <button class="btn" id="reset-nines" onclick="resetNines()" title="Set every student's 9s in this class back to 0" style="color:#b3414f">↺ <span class="long">Reset 9s</span><span class="short">Reset</span></button>
           <button class="btn green" onclick="rewardAllActive()">🌟 Award 9s to everyone</button>
         </div>
       </div>
@@ -2768,6 +2769,20 @@
       }
       if (!count) return alert('No students in the class yet.');
       playSound('award');
+      update(ref(db, `classes/${classCode}`), updates);
+    };
+
+    // Experiment only: put every student's 9s in this class back to 0 (the students stay on the list)
+    window.resetNines = function () {
+      if (!classCode) return;
+      const ids = Object.keys(previousRoster);
+      if (!ids.length) return alert('No students in the class yet.');
+      const total = ids.reduce((n, id) => n + (previousRoster[id].stars || 0), 0);
+      if (!total) return alert("Everyone is already on 0.");
+      const c = currentClass();
+      if (!confirm(`Reset every student's 9s to 0 in ${c ? c.name : 'this class'}?\n\n${ids.length} students, ${total} 9s in total. This can't be undone.\n\nTip: use "Download 9s" first if you want a copy.`)) return;
+      const updates = {};
+      ids.forEach((id) => { updates[`students/${id}/stars`] = 0; });
       update(ref(db, `classes/${classCode}`), updates);
     };
 
