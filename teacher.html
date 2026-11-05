@@ -749,6 +749,72 @@
     #code-screen .cs-hint { font-size: clamp(.8rem, 1.8vw, 1.1rem); opacity: .6; margin-top: 1vh; }
     #code-screen #cs-close { position: absolute; top: 14px; right: 18px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.16); color: #fff; font-size: 1.4rem; cursor: pointer; }
     #code-screen #cs-close:hover { background: rgba(255,255,255,.28); }
+  
+    /* ---------- DIAGNOSTICS ---------- */
+    .diag-card { width: min(960px, 100%); max-height: calc(100vh - 40px); overflow: auto; }
+    #diag-btn { position: relative; }
+    #diag-badge { margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: var(--accent-2); color: #fff; font-size: .7rem; font-weight: 700; }
+    .dg-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+    .dg-head h3 { margin: 0; }
+    .dg-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .dg-sub { color: var(--muted); font-size: .8rem; margin-top: 2px; }
+    .dg-dim { color: var(--muted); font-size: .78rem; font-weight: 500; }
+    .dg-empty { padding: 16px; text-align: center; color: var(--muted); font-size: .9rem; border: 1.5px dashed var(--panel-border); border-radius: 14px; margin: 8px 0; }
+    .dg-live, .dg-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1px solid var(--panel-border); border-radius: 14px; margin: 8px 0; background: rgba(0,0,0,.03); }
+    .dg-live { border-color: var(--good); background: rgba(61,154,114,.08); }
+    .dg-pill { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; background: #e6e9f0; color: var(--muted); }
+    .dg-pill.on { background: #dcefe5; color: #2c7a58; }
+    .dg-sec { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 4px; font-family: 'Outfit', sans-serif; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; font-size: .72rem; color: var(--muted); }
+    .dg-in { width: 100%; padding: 9px 12px; font: inherit; font-size: .95rem; color: var(--text); background: #fff; border: 1.5px solid #d8dfea; border-radius: 11px; outline: none; user-select: text; }
+    .dg-in:focus { border-color: #6b8cc7; box-shadow: 0 0 0 3px rgba(107,140,199,.2); }
+    textarea.dg-in { resize: vertical; margin-top: 6px; }
+    .dg-in.sm { width: auto; padding: 6px 8px; font-size: .85rem; }
+    .dg-in.xs { width: 64px; padding: 6px 8px; font-size: .85rem; }
+    .dg-check { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: .85rem; color: var(--muted); }
+    .dg-q { padding: 12px; margin: 10px 0; border: 1px solid var(--panel-border); border-radius: 14px; background: rgba(0,0,0,.02); }
+    .dg-qh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .dg-qh .btn { padding: 4px 9px; }
+    .dg-sp { flex: 1; }
+    .dg-mini { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--muted); font-weight: 600; }
+    .dg-tw { overflow: auto; margin: 10px 0; border: 1px solid var(--panel-border); border-radius: 12px; }
+    .dg-t { border-collapse: collapse; width: 100%; font-size: .88rem; }
+    .dg-t th, .dg-t td { padding: 7px 10px; text-align: center; border-bottom: 1px solid var(--panel-border); white-space: nowrap; }
+    .dg-t th:first-child, .dg-t td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
+    .dg-t thead th { background: #f3f5f9; font-family: 'Outfit', sans-serif; font-size: .75rem; letter-spacing: .06em; color: var(--muted); }
+    .dg-t thead th:first-child { background: #f3f5f9; }
+    .dg-t tbody tr[data-d="row"] { cursor: pointer; }
+    .dg-t tbody tr[data-d="row"]:hover td, .dg-t tr.sel td { background: #f1f6fb; }
+    .dg-t td.ok { color: var(--good); font-weight: 700; } .dg-t td.no { color: var(--bad); font-weight: 700; } .dg-t td.part { color: #b7791f; font-weight: 700; }
+    .dg-t tr.foot td { background: #f3f5f9; font-weight: 700; color: var(--muted); }
+    .dg-detail td { text-align: left !important; white-space: normal !important; background: #fafbfd !important; }
+    .dg-dl { display: grid; gap: 10px; }
+    .dg-da { padding: 8px 10px; border-left: 3px solid var(--accent-2); background: #fff; border-radius: 6px; }
+    .dg-tabs { display: flex; align-items: center; gap: 6px; margin: 12px 0 8px; flex-wrap: wrap; }
+    .dg-tab { padding: 7px 14px; border: 1.5px solid var(--panel-border); background: #fff; border-radius: 999px; font: inherit; font-weight: 700; font-size: .85rem; color: var(--muted); cursor: pointer; }
+    .dg-tab.on { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+    .dg-sp2 { margin-left: auto; }
+    .dg-bulk { position: sticky; top: -22px; z-index: 3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 9px 12px; margin: 6px 0 10px; border-radius: 12px; background: #eaf2fb; border: 1px solid #c5dbf1; font-size: .88rem; }
+    .dg-bulk.off { position: static; background: transparent; border: none; padding: 2px 0; color: var(--muted); font-size: .8rem; }
+    .dg-qs { margin: 0 0 16px; border: 1px solid var(--panel-border); border-radius: 14px; overflow: hidden; }
+    .dg-qhead { padding: 10px 14px; background: #f3f5f9; border-bottom: 1px solid var(--panel-border); }
+    .dg-chk { color: #b7791f; }
+    .dg-g { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--panel-border); border-left: 4px solid transparent; background: #fff; }
+    .dg-g:last-child { border-bottom: none; }
+    .dg-g.ok { border-left-color: #6dbf98; } .dg-g.no { border-left-color: #e08a96; background: #fffafa; } .dg-g.part { border-left-color: #e6b655; } .dg-g.none, .dg-g.wait { border-left-color: #cfd6e2; }
+    .dg-g.chk { background: #fffaf0; }
+    .dg-cb { width: 22px; flex: none; display: flex; justify-content: center; }
+    .dg-gmain { flex: 1; min-width: 0; }
+    .dg-gtxt { font-weight: 700; word-break: break-word; white-space: pre-wrap; }
+    .dg-gmeta { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+    .dg-n { display: inline-block; min-width: 22px; text-align: center; padding: 0 6px; border-radius: 999px; background: #e6e9f0; color: var(--text); font-weight: 700; margin-right: 4px; }
+    .dg-tag { display: inline-block; padding: 0 7px; border-radius: 6px; font-size: .72rem; font-weight: 700; background: #e6e9f0; color: var(--muted); }
+    .dg-tag.t1 { background: #fff0cf; color: #8a6200; } .dg-tag.t2 { background: #fde3e6; color: #a63a49; }
+    .dg-gb { display: flex; gap: 4px; align-items: center; flex: none; }
+    .dg-b { min-width: 34px; padding: 6px 9px; border: 1.5px solid var(--panel-border); border-radius: 9px; background: #fff; font: inherit; font-weight: 700; font-size: .85rem; color: var(--text); cursor: pointer; }
+    .dg-b:hover { background: #f1f6fb; } .dg-b.on { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+    .dg-b.rem { color: #2c7a58; border-color: #bfe3cf; background: #f1faf5; font-size: .78rem; }
+    @media (max-width: 700px) { .dg-g { flex-wrap: wrap; } .dg-gb { width: 100%; justify-content: flex-end; } }
+    .dg-dans { margin: 4px 0; padding: 6px 10px; background: #f3f5f9; border-radius: 8px; font-weight: 600; white-space: pre-wrap; word-break: break-word; }
   </style>
 </head>
 <body>
@@ -800,6 +866,7 @@
       <button class="btn icon-btn" id="co-btn" title="Co-teachers: invite another teacher to this class, or join one" aria-label="Co-teachers">👥</button>
       <button class="btn icon-btn" id="edit-class" title="Rename, clear or delete this class" aria-label="Edit class">✎</button>
       <button class="btn" id="new-class" title="Create a new class">+ <span class="long">New class</span><span class="short">New</span></button>
+      <button class="btn" id="diag-btn" title="Deploy a diagnostic that marks itself">📝 <span class="long">Diagnostics</span><span class="short">Diag</span><span id="diag-badge" hidden></span></button>
       <button class="btn" onclick="exportNines()" title="Download every class's 9s as one CSV, grouped by class">📊 Download 9s</button>
       <button class="btn" id="signout" title="Sign out">Sign out</button>
     </div>
@@ -926,6 +993,10 @@
         <button type="button" class="link-btn red" id="modal-delete">Delete class</button>
       </div>
     </form>
+  </div>
+
+  <div class="modal" id="diag-modal" hidden>
+    <div class="modal-card diag-card" role="dialog" aria-modal="true" aria-label="Diagnostics"><div id="diag-body"></div></div>
   </div>
 
   <div class="modal" id="co-modal" hidden>
@@ -2391,6 +2462,7 @@
 
     function handleStudents(snapshot) {
       const current = snapshot.val() || {};
+      dRoster = current; if (!dModal.hidden) renderDiag();
       const ids = Object.keys(current);
       chipTotal.textContent = `${ids.length} ${ids.length === 1 ? 'student' : 'students'}`;
       tabCount.textContent = ids.length;
@@ -2603,8 +2675,750 @@
       unsubs.push(onValue(cp('session/soloWork'), handleSolo, dbError));
       unsubs.push(onValue(cp('session/timer'), handleTimer, dbError));
       unsubs.push(onValue(cp('students'), handleStudents, dbError));
+      diagAttach();
     }
-    function detach() { unsubs.forEach((u) => u()); unsubs = []; }
+    function detach() { unsubs.forEach((u) => u()); unsubs = []; diagDetach(); }
+    /* ---------- DIAGNOSTICS: marking engine (pure, no DOM) ----------
+       Typed answers are compared by meaning, not spelling: words are reduced to their base form, matched against a built-in set of
+       GCSE equivalences and (when synonyms.json is found next to this page) a full WordNet synonym dictionary, with spelling slips
+       forgiven. Anything marked by a looser rule is flagged so it can be checked in the results list. */
+    const SUBSUP = { '₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9','⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','⁺':'+','⁻':'-','₊':'+','₋':'-' };
+    const D_NUMW = { zero:'0', one:'1', two:'2', three:'3', four:'4', five:'5', six:'6', seven:'7', eight:'8', nine:'9', ten:'10', eleven:'11', twelve:'12', thirteen:'13', fourteen:'14', fifteen:'15', sixteen:'16', seventeen:'17', eighteen:'18', nineteen:'19', twenty:'20' };
+    const D_STOP = new Set('a an the of to in on at by for with from as is are was were be been being am it its this that these those there their they them he she we you i and or but so than then also very just really quite which who whom whose what when where while do does did done go goes going went get gets getting got become becomes has have had having can could will would should may might must shall if because since too such some any each both'.split(' '));
+    const D_NEG = new Set(['not', 'no', 'never', 'cannot', 'cant', 'dont', 'doesnt', 'didnt', 'isnt', 'arent', 'wont', 'wouldnt', 'shouldnt', 'without', 'neither', 'nor', 'none', 'nothing', 'nt']);
+    const D_IRR = { ran:'run', gave:'give', given:'give', took:'take', taken:'take', made:'make', lost:'lose', froze:'freeze', frozen:'freeze', began:'begin', begun:'begin', fell:'fall', fallen:'fall', grew:'grow', grown:'grow', went:'go', gone:'go', got:'get', shrank:'shrink', shrunk:'shrink', broke:'break', broken:'break', sank:'sink', rose:'rise', risen:'rise', burnt:'burn', held:'hold', kept:'keep', left:'leave', saw:'see', seen:'see', shook:'shake', shaken:'shake', flew:'fly', swam:'swim', drew:'draw', drawn:'draw', ate:'eat', eaten:'eat', better:'good', worse:'bad', less:'little', more:'much', fewer:'few', atoms:'atom', electrons:'electron', people:'person', lives:'life', leaves:'leaf', gases:'gas', bonds:'bond' };
+    const D_GROUPS_TXT = `increase rise grow expand bigger larger greater more higher gain raise climb enlarge swell multiply up
+decrease reduce fall drop lower smaller less fewer shrink decline diminish lessen contract down
+fast quick rapid speedy swift quickly rapidly
+accelerate quicken hasten speed
+slow sluggish
+decelerate brake slow
+stop cease halt end finish terminate
+start begin commence initiate
+create make produce form generate yield build synthesise synthesize
+cause make lead trigger produce
+use utilise utilize employ
+need require
+show display indicate demonstrate reveal
+give release emit transfer donate shed lose
+take absorb receive accept gain
+lose shed donate release give
+hold keep retain
+remove take eliminate extract withdraw
+add include combine
+mix blend combine
+join bond link connect attach combine
+break split decompose separate divide
+vibrate oscillate wobble shake jiggle quiver
+move travel flow slide glide drift
+random haphazard irregular disordered
+regular ordered orderly neat uniform patterned pattern
+tight tightly close closely compact packed dense crowded
+apart spread scattered spaced distant far
+gap space
+strong powerful
+weak feeble
+attract pull draw
+repel push
+hot warm heated heat warmth thermal
+cold cool chilly freezing
+big large huge great
+small little tiny minute
+same equal identical equivalent
+different unlike distinct
+fixed stationary static still immobile rigid
+vigorously rapidly quickly fast energetically
+evaporate vaporise vaporize
+condense liquefy
+melt liquefy
+freeze solidify
+carry transport convey
+conduct transfer pass carry transmit
+protect shield guard
+prevent stop block hinder
+allow let permit enable
+mean signify
+positive plus
+negative minus
+neutral uncharged
+inside inner interior internal
+outside outer exterior surface
+many several numerous multiple lots plenty
+diffuse spread disperse
+gas vapour vapor
+current flow
+cell battery
+wire cable
+bulb lamp
+kinetic movement motion
+gravitational gravity
+steep steepness gradient slope
+straight linear
+eat consume ingest
+respire respiration
+dissolve disperse
+light bright
+energy power`;
+    const D_CURATED = D_GROUPS_TXT.split('\n').map((l) => l.trim().split(/\s+/)).filter((g) => g.length > 1);
+    let dIndex = null, dWN = null, dDictState = 'loading', dDictPromise = null;
+    const dLinkCache = new Map();
+    function dBuildIndex() {
+      dIndex = new Map();
+      const add = (words, tag) => words.forEach((w) => { let s = dIndex.get(w); if (!s) dIndex.set(w, s = new Set()); s.add(tag); });
+      D_CURATED.forEach((g, i) => add(g, 'c' + i));
+      if (dWN) dWN.forEach((g, i) => add(g.split(' '), 'w' + i));
+      dLinkCache.clear();
+    }
+    // load the big WordNet dictionary once; marking still works (with the built-in equivalences) if the file is missing
+    function dLoadDict() {
+      if (dDictPromise) return dDictPromise;
+      dBuildIndex();
+      dDictPromise = fetch('synonyms.json', { cache: 'force-cache' }).then((r) => { if (!r.ok) throw new Error('missing'); return r.json(); })
+        .then((j) => { dWN = j.g; dBuildIndex(); dDictState = 'ok'; })
+        .catch(() => { dDictState = 'missing'; });
+      return dDictPromise;
+    }
+    function dTok(s) {
+      s = String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      s = s.replace(/[₀-₉⁰-⁹⁺⁻₊₋]/g, (c) => SUBSUP[c] || c).replace(/[‘’`´']/g, '').replace(/[–—−]/g, '-');
+      s = s.replace(/\^/g, '').replace(/(\d),(?=\d{3}\b)/g, '$1');
+      s = s.replace(/[^a-z0-9.+\-%\s]/g, ' ').replace(/\.(?!\d)/g, ' ').replace(/(^|\s)-(?!\d)/g, ' ').replace(/-(?=\s|$)/g, ' ');
+      return s.split(/\s+/).filter(Boolean).map((w) => D_NUMW[w] || w);
+    }
+    const dNorm = (s) => dTok(s).join(' ').replace(/^(the|a|an) /, '');
+    function dCands(w) {
+      const out = [w];
+      if (D_IRR[w]) out.push(D_IRR[w]);
+      const L = w.length;
+      if (/ies$/.test(w) && L > 4) out.push(w.slice(0, -3) + 'y');
+      if (/(sses|xes|ches|shes|zes)$/.test(w)) out.push(w.slice(0, -2));
+      if (/s$/.test(w) && !/ss$/.test(w) && L > 3) out.push(w.slice(0, -1));
+      if (/ing$/.test(w) && L > 5) { const b = w.slice(0, -3); out.push(b, b + 'e'); if (/(.)\1$/.test(b)) out.push(b.slice(0, -1)); }
+      if (/ed$/.test(w) && L > 4) { const b = w.slice(0, -2); out.push(b, w.slice(0, -1)); if (/(.)\1$/.test(b)) out.push(b.slice(0, -1)); if (/ied$/.test(w)) out.push(w.slice(0, -3) + 'y'); }
+      if (/(er|est)$/.test(w) && L > 4) { const b = w.replace(/(er|est)$/, ''); out.push(b, b + 'e'); if (/(.)\1$/.test(b)) out.push(b.slice(0, -1)); }
+      if (/ly$/.test(w) && L > 4) out.push(w.slice(0, -2), w.slice(0, -2) + 'e');
+      if (/ily$/.test(w) && L > 5) out.push(w.slice(0, -3) + 'y');
+      if (/(ation|ition)$/.test(w) && L > 7) out.push(w.slice(0, -3) + 'e', w.slice(0, -5));
+      if (/ment$/.test(w) && L > 6) out.push(w.slice(0, -4));
+      return out;
+    }
+    function dSlack(len) { return len >= 10 ? 2 : len >= 5 ? 1 : 0; }
+    function dLev(a, b, max) {
+      if (Math.abs(a.length - b.length) > max) return max + 1;
+      let prev2 = null, prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+      for (let i = 1; i <= a.length; i++) {
+        const cur = [i];
+        for (let j = 1; j <= b.length; j++) {
+          cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+          if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) cur[j] = Math.min(cur[j], prev2[j - 2] + 1);
+        }
+        prev2 = prev; prev = cur;
+      }
+      return prev[b.length];
+    }
+    // how do two single words relate?  0 = same word (any ending) · 1 = equivalent word (dictionary) · 2 = spelling slip · null = unrelated
+    function dLink(x, y, spell) {
+      if (x === y) return { lv: 0 };
+      const ck = x + '|' + y + '|' + (spell ? 1 : 0);
+      if (dLinkCache.has(ck)) return dLinkCache.get(ck);
+      let res = null;
+      const cx = dCands(x), cy = dCands(y);
+      if (cx.some((a) => cy.includes(a))) res = { lv: 0 };
+      else {
+        if (!dIndex) dBuildIndex();
+        const gx = new Set(); cx.forEach((a) => { const s = dIndex.get(a); if (s) s.forEach((t) => gx.add(t)); });
+        if (gx.size && cy.some((b) => { const s = dIndex.get(b); return s && [...s].some((t) => gx.has(t)); })) res = { lv: 1, how: x + '≈' + y };
+        else if (spell && !/\d/.test(x + y)) {
+          const m = Math.min(x.length, y.length);
+          if (m >= 5 && cx.some((a) => cy.some((b) => a.length >= 4 && dLev(a, b, dSlack(Math.min(a.length, b.length))) <= dSlack(Math.min(a.length, b.length))))) res = { lv: 2, how: x + '~' + y };
+        }
+      }
+      dLinkCache.set(ck, res);
+      return res;
+    }
+    // find phrase (array of key words) inside answer tokens: every content word must appear (as itself, an equivalent or a slip), close together, not negated.
+    function dFindPhrase(ans, phrase, spell) {
+      let need = phrase.filter((w) => !D_STOP.has(w)); if (!need.length) need = phrase.slice();
+      const cand = need.map((p) => { const L = []; ans.forEach((a, i) => { if (D_STOP.has(a) && !D_STOP.has(p)) return; const k = dLink(a, p, spell); if (k) L.push({ i, k }); }); return L; });
+      if (cand.some((L) => !L.length)) return { ok: false, got: cand.filter((L) => L.length).length, of: need.length };
+      let best = null;
+      const anchorIx = cand.reduce((b, L, k) => (L.length < cand[b].length ? k : b), 0);
+      cand[anchorIx].forEach((anc) => {
+        const used = new Set([anc.i]); const pick = [];
+        let okAll = true;
+        need.forEach((_, k) => {
+          if (k === anchorIx) { pick[k] = anc; return; }
+          const opts = cand[k].filter((c) => !used.has(c.i)).sort((a, b) => (a.k.lv - b.k.lv) || (Math.abs(a.i - anc.i) - Math.abs(b.i - anc.i)));
+          if (!opts.length) { okAll = false; return; }
+          pick[k] = opts[0]; used.add(opts[0].i);
+        });
+        if (!okAll) return;
+        const pos = pick.map((p) => p.i), lo = Math.min(...pos), hi = Math.max(...pos);
+        if (hi - lo + 1 > need.length * 2 + 4) return;
+        const lv = Math.max(...pick.map((p) => p.k.lv));
+        const sc = lv * 100 + (hi - lo);
+        if (!best || sc < best.sc) best = { sc, lv, lo, hi, how: pick.filter((p) => p.k.how).map((p) => p.k.how) };
+      });
+      if (!best) return { ok: false, got: need.length - 1, of: need.length };
+      for (let j = Math.max(0, best.lo - 3); j < best.lo; j++) if (D_NEG.has(ans[j])) return { ok: false, neg: true, got: need.length, of: need.length };
+      for (let j = best.lo; j <= best.hi; j++) if (D_NEG.has(ans[j]) && !need.some((n) => D_NEG.has(n))) return { ok: false, neg: true, got: need.length, of: need.length };
+      return { ok: true, lv: best.lv, how: best.how, span: [best.lo, best.hi] };
+    }
+    function dParseNum(s) {
+      let t = String(s == null ? '' : s).trim().toLowerCase();
+      if (D_NUMW[t]) return +D_NUMW[t];
+      t = t.replace(/[−–—]/g, '-').replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/×\s*10\s*\^?\s*(-?\d+)/gi, 'e$1');
+      const m = t.match(/^\s*([-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)/i);
+      if (m) return parseFloat(m[1]);
+      const f = t.match(/^\s*(-?\d+)\s*\/\s*(\d+)/);
+      return f && +f[2] ? +f[1] / +f[2] : null;
+    }
+    // q = { type:'text'|'number'|'keywords', acc:[...lines], tol, m }  ->  { m: marks awarded, fl: 0 clean · 1 awarded loosely (check) · 2 near miss (check), w: why }
+    function dMarkOne(q, answer, spell) {
+      const mx = Math.max(1, +q.m || 1);
+      const acc = (q.acc || []).map((x) => String(x).trim()).filter(Boolean);
+      const none = { m: 0, fl: 0, w: '' };
+      if (!acc.length || !String(answer || '').trim()) return none;
+      if (q.type === 'number') {
+        const got = dParseNum(answer); if (got === null) return none;
+        const tol = Math.abs(+q.tol || 0);
+        return acc.some((x) => { const w = dParseNum(x); return w !== null && Math.abs(got - w) <= tol + 1e-9 * Math.max(1, Math.abs(w)); }) ? { m: mx, fl: 0, w: '' } : none;
+      }
+      const ans = dTok(answer); if (!ans.length) return none;
+      if (q.type === 'keywords') {
+        let hit = 0, loose = 0; const why = [];
+        acc.forEach((line, n) => {
+          let best = null;
+          line.split('/').forEach((alt) => {
+            const ph = dTok(alt); if (!ph.length) return;
+            const r = dFindPhrase(ans, ph, spell);
+            if (r.ok && (!best || r.lv < best.lv)) best = r;
+          });
+          if (best) { hit++; if (best.lv > 0) { loose++; why.push(`point ${n + 1}: ${best.how.join(', ') || 'close wording'}`); } }
+        });
+        const m = Math.min(mx, hit);
+        return { m, fl: m && loose ? 1 : 0, w: m && loose ? why.join('; ').slice(0, 110) : '' };
+      }
+      // typed answer: all the key words, at most two extra words, nothing contradicting
+      let near = 0, nearWhy = '', result = null;
+      const squash = (x) => x.join('');
+      for (const line of acc) {
+        for (const alt of line.split('/')) {
+          const ph = dTok(alt); if (!ph.length) continue;
+          if (squash(ph.filter((w) => !D_STOP.has(w))) === squash(ans.filter((w) => !D_STOP.has(w)))) return { m: mx, fl: 0, w: '' };
+          const r = dFindPhrase(ans, ph, spell);
+          if (r.ok) {
+            const content = ans.filter((w) => !D_STOP.has(w)).length, keyc = ph.filter((w) => !D_STOP.has(w)).length || ph.length;
+            const extra = Math.max(0, content - keyc);
+            const hasNeg = ans.some((w) => D_NEG.has(w)) && !ph.some((w) => D_NEG.has(w));
+            if (hasNeg) { near = Math.max(near, 1); nearWhy = 'contains a negative'; continue; }
+            if (extra <= 2) {
+              const lv = Math.max(r.lv, extra ? 1 : 0);
+              const cand = { m: mx, fl: lv ? 1 : 0, w: lv ? (r.how.length ? r.how.join(', ') : extra ? 'extra words in the answer' : '') : '' };
+              if (!result || cand.fl < result.fl) result = cand;
+            } else { near = Math.max(near, 1); nearWhy = 'right idea inside a long answer'; }
+          } else if (r.neg) { near = Math.max(near, 1); nearWhy = 'negated'; }
+          else if (r.of > 1 && r.got / r.of >= 0.5) { near = Math.max(near, 1); nearWhy = 'partly matches'; }
+        }
+      }
+      if (result) return result;
+      return near ? { m: 0, fl: 2, w: nearWhy } : none;
+    }
+    // key = { spell, qs:[...] }, answers = { '0': '...', ... }, keep = existing result (to preserve teacher overrides)
+    function dMarkAll(key, answers, keep) {
+      const marks = {}, ov = {}, fl = {}, w = {};
+      let s = 0, t = 0;
+      (key.qs || []).forEach((q, i) => {
+        const m = Math.max(1, +q.m || 1); t += m;
+        let v;
+        if (keep && keep.ov && keep.ov[i] && keep.m && keep.m[i] != null) { v = Math.min(m, Math.max(0, +keep.m[i] || 0)); ov[i] = true; }
+        else { const r = dMarkOne(q, (answers || {})[i], key.spell !== false); v = r.m; if (r.fl) fl[i] = r.fl; if (r.w) w[i] = r.w; }
+        marks[i] = v; s += v;
+      });
+      return { s, t, m: marks, ov, fl, w, ts: Date.now() };
+    }
+
+    /* ---------- DIAGNOSTICS (teacher): build, deploy, auto-mark, results ---------- */
+    const DLIB_KEY = 'll_diagnostics_v1';
+    const D_TYPES = { text: 'Typed answer', number: 'Number', keywords: 'Key points' };
+    let dLib = [], dLibLoaded = false;
+    let dActive = null, dReveal = null, dKey = null, dAns = {}, dRes = {}, dRoster = {}, dDone = {};
+    let dUnsubs = [], dSub2 = [];
+    let dView = 'home', dEdit = null, dOpenSid = null, dMsg = '';
+    const dModal = document.getElementById('diag-modal');
+    const dBody = document.getElementById('diag-body');
+    const dNewId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    const dArr = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.keys(v).sort((a, b) => a - b).map((k) => v[k]) : []);
+    const dLines = (s) => String(s || '').split('\n').map((x) => x.trim()).filter(Boolean);
+    const dMarksOf = (q) => Math.min(20, Math.max(1, parseInt(q.m, 10) || (q.type === 'keywords' ? dLines(q.acc).length : 1) || 1));
+    const dKeyOf = (item, id) => ({ id, spell: item.spell !== false, qs: item.qs.map((q) => ({ type: q.type, acc: dLines(q.acc).map((x) => x.slice(0, 200)).slice(0, 12), tol: Math.abs(+q.tol || 0), m: dMarksOf(q) })) });
+    const dNormKey = (k) => ({ id: k.id, spell: k.spell !== false, qs: dArr(k.qs).map((q) => ({ type: q.type, acc: dArr(q.acc), tol: +q.tol || 0, m: +q.m || 1 })) });
+
+    function dLocalLib() { try { return JSON.parse(localStorage.getItem(DLIB_KEY) || '[]') || []; } catch (e) { return []; } }
+    function dSaveLocal() { try { localStorage.setItem(DLIB_KEY, JSON.stringify(dLib)); } catch (e) {} }
+    async function dLoadLib() {
+      if (dLibLoaded) return;
+      dLib = dLocalLib();
+      if (uid) {
+        try {
+          const snap = await get(ref(db, `teachers/${uid}/diagnostics`));
+          const remote = snap.val() || {};
+          Object.keys(remote).forEach((id) => {
+            try {
+              const it = JSON.parse(remote[id]);
+              const mine = dLib.find((x) => x.id === id);
+              if (!mine) dLib.push(it); else if ((it.updated || 0) > (mine.updated || 0)) Object.assign(mine, it);
+            } catch (e) {}
+          });
+          dLibLoaded = true;
+          dSaveLocal();
+          // anything only on this computer goes up too, so it follows you
+          dLib.forEach((it) => { if (!remote[it.id]) set(ref(db, `teachers/${uid}/diagnostics/${it.id}`), JSON.stringify(it)).catch(() => {}); });
+        } catch (e) { /* offline or rules not yet published: keep the local copy */ }
+      }
+      dLib.sort((a, b) => (b.updated || 0) - (a.updated || 0));
+    }
+    function dPersist(it) {
+      it.updated = Date.now();
+      const i = dLib.findIndex((x) => x.id === it.id);
+      if (i < 0) dLib.unshift(it); else dLib[i] = it;
+      dSaveLocal();
+      if (uid) set(ref(db, `teachers/${uid}/diagnostics/${it.id}`), JSON.stringify(it)).catch(() => { dMsg = 'Saved on this computer only (the database rejected it: check the new rules are published).'; });
+    }
+    function dForget(id) {
+      dLib = dLib.filter((x) => x.id !== id); dSaveLocal();
+      if (uid) remove(ref(db, `teachers/${uid}/diagnostics/${id}`)).catch(() => {});
+    }
+
+    function diagAttach() {
+      diagDetach();
+      dLoadDict();
+      if (!classCode) { renderDiag(); return; }
+      dUnsubs.push(onValue(cp('diag'), (snap) => {
+        const v = snap.val() || {};
+        const a = v.active || null;
+        const changed = (a && a.id) !== (dActive && dActive.id);
+        dActive = a ? { ...a, qs: dArr(a.qs) } : null;
+        dReveal = v.reveal || null;
+        if (changed) dSwitch();
+        dBadge(); renderDiag();
+      }, dbError));
+    }
+    function diagDetach() {
+      dUnsubs.forEach((u) => u()); dUnsubs = [];
+      dSub2.forEach((u) => u()); dSub2 = [];
+      dActive = null; dReveal = null; dKey = null; dAns = {}; dRes = {}; dDone = {};
+      if (dView === 'results') dView = 'home';
+      dBadge();
+    }
+    function dSwitch() {
+      dSub2.forEach((u) => u()); dSub2 = [];
+      dKey = null; dAns = {}; dRes = {}; dDone = {}; dOpenSid = null;
+      if (dView === 'results' && !dActive) dView = 'home';
+      if (!dActive) return;
+      const id = dActive.id, code = classCode;
+      get(ref(db, `diagKeys/${code}`)).then((s) => {
+        const k = s.val();
+        if (code === classCode && k && k.id === id) { dKey = dNormKey(k); dMarkPending(); renderDiag(); }
+      }).catch(() => {});
+      dSub2.push(onValue(cp(`diagAns/${id}`), (s) => { dAns = s.val() || {}; dMarkPending(); dBadge(); renderDiag(); }, dbError));
+      dSub2.push(onValue(cp(`diagRes/${id}`), (s) => { dRes = s.val() || {}; renderDiag(); }, dbError));
+    }
+    // marks any submission we haven't marked yet (the first teacher page open does it; a second one just agrees)
+    function dMarkPending(force) { return dLoadDict().then(() => { dMarkPendingNow(force); renderDiag(); }); }
+    function dMarkPendingNow(force) {
+      if (!dActive || !dKey || dKey.id !== dActive.id) return;
+      Object.keys(dAns).forEach((sid) => {
+        const ans = dAns[sid]; if (!ans || typeof ans !== 'object') return;
+        const res = dRes[sid];
+        if (!force && ((res && res.for === ans.t) || dDone[sid] === ans.t)) return;
+        dDone[sid] = ans.t;
+        const r = dMarkAll(dKey, dArr(ans.a).length ? dArr(ans.a) : ans.a || {}, res);
+        r.for = ans.t;
+        set(cp(`diagRes/${dActive.id}/${sid}`), r).catch(dbError);
+      });
+    }
+    function dBadge() {
+      const b = document.getElementById('diag-badge');
+      if (!b) return;
+      const n = Object.keys(dAns).length;
+      b.hidden = !dActive;
+      b.textContent = dActive ? (dActive.open ? n + ' in' : 'closed') : '';
+    }
+
+    /* ----- screens ----- */
+    function renderDiag() {
+      if (dModal.hidden) return;
+      const keep = dBody.scrollTop;
+      if (dView === 'edit') return;           // never redraw under someone who is typing
+      dBody.innerHTML = dView === 'results' ? dResultsHTML() : dHomeHTML();
+      dBody.scrollTop = keep;
+    }
+    function dHomeHTML() {
+      let h = '<div class="dg-head"><h3>Diagnostics</h3><button type="button" class="btn" data-d="close">Close</button></div>';
+      h += '<p class="modal-sub">Build a diagnostic, deploy it to this class, and students type their answers. Each answer is marked automatically as it comes in.</p>';
+      if (dMsg) h += `<div class="modal-error">${esc(dMsg)}</div>`;
+      if (!classCode) h += '<div class="dg-empty">Create or choose a class first.</div>';
+      if (dActive) {
+        const n = Object.keys(dAns).length, total = Math.max(Object.keys(dRoster).length, n);
+        h += `<div class="dg-live"><div><strong>${esc(dActive.title)}</strong> <span class="dg-pill ${dActive.open ? 'on' : ''}">${dActive.open ? 'Open to students' : 'Closed'}</span>
+          <div class="dg-sub">${n} of ${total} submitted · ${dActive.qs.length} question${dActive.qs.length === 1 ? '' : 's'}</div></div>
+          <div class="dg-row"><button type="button" class="btn green" data-d="results">📊 Results</button>
+          <button type="button" class="btn" data-d="toggle">${dActive.open ? '⏹ Close it' : '▶ Reopen'}</button>
+          <button type="button" class="btn" data-d="reveal">${dReveal ? '🙈 Hide answers' : '👁 Show answers to students'}</button>
+          <button type="button" class="btn" data-d="remove">🗑 Remove</button></div></div>`;
+      }
+      h += '<div class="dg-sec"><span>Your diagnostics</span><button type="button" class="btn green" data-d="new">+ New diagnostic</button></div>';
+      if (!dLib.length) h += '<div class="dg-empty">Nothing saved yet. Press “New diagnostic” to make one.</div>';
+      dLib.forEach((it) => {
+        const marks = it.qs.reduce((a, q) => a + dMarksOf(q), 0);
+        h += `<div class="dg-item"><div><strong>${esc(it.title || 'Untitled')}</strong><div class="dg-sub">${it.qs.length} question${it.qs.length === 1 ? '' : 's'} · ${marks} mark${marks === 1 ? '' : 's'}</div></div>
+          <div class="dg-row"><button type="button" class="btn green" data-d="deploy" data-id="${esc(it.id)}"${classCode ? '' : ' disabled'}>🚀 Deploy</button>
+          <button type="button" class="btn" data-d="edit" data-id="${esc(it.id)}">✎ Edit</button>
+          <button type="button" class="btn" data-d="dup" data-id="${esc(it.id)}">⧉</button>
+          <button type="button" class="btn" data-d="del" data-id="${esc(it.id)}">🗑</button></div></div>`;
+      });
+      return h;
+    }
+    function dEditHTML() {
+      const it = dEdit;
+      let h = `<div class="dg-head"><h3>${it._new ? 'New diagnostic' : 'Edit diagnostic'}</h3></div>
+        <label class="modal-label" for="dg-title">Title</label>
+        <input id="dg-title" class="dg-in" maxlength="80" placeholder="e.g. Year 10 Atomic Structure diagnostic" value="${esc(it.title)}">
+        <label class="dg-check"><input type="checkbox" id="dg-spell" ${it.spell !== false ? 'checked' : ''}> Forgive a one-letter spelling slip in longer words</label>`;
+      it.qs.forEach((q, i) => {
+        const ph = q.type === 'number' ? 'Correct value, e.g. 12.5 (units are ignored)' : q.type === 'keywords' ? 'One key point per line. Use / for alternatives, e.g.\natoms / particles\nvibrate / move' : 'One accepted answer per line, e.g.\nmitochondria\nmitochondrion';
+        h += `<div class="dg-q"><div class="dg-qh"><b>Q${i + 1}</b>
+          <select data-i="${i}" data-f="type" class="dg-in sm">${Object.keys(D_TYPES).map((k) => `<option value="${k}"${q.type === k ? ' selected' : ''}>${D_TYPES[k]}</option>`).join('')}</select>
+          <label class="dg-mini">Marks <input data-i="${i}" data-f="m" class="dg-in xs" type="number" min="1" max="20" value="${esc(q.m)}" placeholder="${q.type === 'keywords' ? 'auto' : '1'}"></label>
+          ${q.type === 'number' ? `<label class="dg-mini">± <input data-i="${i}" data-f="tol" class="dg-in xs" type="number" min="0" step="any" value="${esc(q.tol)}" placeholder="0"></label>` : ''}
+          <span class="dg-sp"></span>
+          <button type="button" class="btn" data-d="qup" data-i="${i}"${i ? '' : ' disabled'}>↑</button>
+          <button type="button" class="btn" data-d="qdn" data-i="${i}"${i < it.qs.length - 1 ? '' : ' disabled'}>↓</button>
+          <button type="button" class="btn" data-d="qdel" data-i="${i}">✕</button></div>
+          <textarea data-i="${i}" data-f="q" class="dg-in" rows="2" maxlength="600" placeholder="Question text">${esc(q.q)}</textarea>
+          <textarea data-i="${i}" data-f="acc" class="dg-in" rows="${q.type === 'keywords' ? 3 : 2}" maxlength="1500" placeholder="${esc(ph)}">${esc(q.acc)}</textarea></div>`;
+      });
+      h += `<div class="dg-row"><button type="button" class="btn" data-d="qadd">+ Add question</button>
+        <button type="button" class="btn" data-d="paste">⇩ Paste many</button></div>
+        <div id="dg-paste" hidden><p class="modal-sub">One question per line: <b>question | answer / other answer | marks</b>. For key points separate them with <b>;</b> (use / for alternatives). A numeric answer becomes a Number question. Marks are optional.</p>
+        <textarea id="dg-paste-t" class="dg-in" rows="6" placeholder="What is the charge of a proton? | positive / +1 | 1&#10;Describe a solid | particles ; vibrate ; fixed positions | 3"></textarea>
+        <div class="dg-row"><button type="button" class="btn green" data-d="pastego">Add these</button></div></div>
+        <div class="modal-error" id="dg-err">${esc(dMsg)}</div>
+        <div class="modal-actions"><button type="button" class="btn" data-d="cancel">Cancel</button><button type="button" class="btn green" data-d="save">Save</button></div>`;
+      return h;
+    }
+    function dStatus(sid) { return dRes[sid] ? 'marked' : dAns[sid] ? 'waiting' : 'none'; }
+    function dStudentsHTML() {
+      const a = dActive; if (!a) return dHomeHTML();
+      const sids = Object.keys({ ...dRoster, ...dAns });
+      const name = (sid) => (dAns[sid] && dAns[sid].n) || (dRoster[sid] && dRoster[sid].name) || sid;
+      sids.sort((x, y) => name(x).localeCompare(name(y)));
+      const nq = a.qs.length, totalMarks = a.qs.reduce((s, q) => s + (+q.m || 1), 0);
+      const marked = sids.filter((s) => dRes[s]);
+      const avg = marked.length ? Math.round(marked.reduce((s, k) => s + (dRes[k].s / (dRes[k].t || 1)), 0) / marked.length * 100) : null;
+      let h = dTabsHTML(marked.length, avg) + `
+        <div class="dg-tw"><table class="dg-t"><thead><tr><th>Student</th>${a.qs.map((q, i) => `<th title="${esc(q.q)}">Q${i + 1}</th>`).join('')}<th>Total</th><th>%</th></tr></thead><tbody>`;
+      sids.forEach((sid) => {
+        const st = dStatus(sid), r = dRes[sid];
+        h += `<tr class="${sid === dOpenSid ? 'sel' : ''}" data-d="row" data-sid="${esc(sid)}"><td>${esc(name(sid))}${st === 'none' ? ' <span class="dg-dim">not submitted</span>' : st === 'waiting' ? ' <span class="dg-dim">marking…</span>' : ''}</td>`;
+        a.qs.forEach((q, i) => {
+          if (!r) { h += '<td class="dg-dim">·</td>'; return; }
+          const m = +((r.m || {})[i]) || 0, mx = +q.m || 1;
+          h += `<td class="${m >= mx ? 'ok' : m > 0 ? 'part' : 'no'}">${mx === 1 ? (m ? '✓' : '✗') : m + '/' + mx}${r.ov && r.ov[i] ? '*' : r.fl && r.fl[i] ? '?' : ''}</td>`;
+        });
+        h += r ? `<td><b>${r.s}/${r.t}</b></td><td>${Math.round(r.s / (r.t || 1) * 100)}%</td></tr>` : '<td></td><td></td></tr>';
+        if (sid === dOpenSid && dAns[sid]) h += `<tr class="dg-detail"><td colspan="${nq + 3}">${dDetailHTML(sid)}</td></tr>`;
+      });
+      if (marked.length) {
+        h += '<tr class="foot"><td>Class got it right</td>' + a.qs.map((q, i) => {
+          const full = marked.filter((s) => (+((dRes[s].m || {})[i]) || 0) >= (+q.m || 1)).length;
+          return `<td>${Math.round(full / marked.length * 100)}%</td>`;
+        }).join('') + '<td></td><td></td></tr>';
+      }
+      h += `</tbody></table></div>${sids.length ? '' : '<div class="dg-empty">Nobody has joined yet.</div>'}<p class="dg-sub">Click a student to see their answers and change a mark. * means you changed it by hand. Out of ${totalMarks} marks.</p>`;
+      return h;
+    }
+    function dDetailHTML(sid) {
+      const ans = dAns[sid], r = dRes[sid], a = dActive, ar = dArr(ans.a).length ? dArr(ans.a) : ans.a || {};
+      let h = '<div class="dg-dl">';
+      a.qs.forEach((q, i) => {
+        const mx = +q.m || 1, m = r ? +((r.m || {})[i]) || 0 : '';
+        const accTxt = dKey && dKey.qs[i] ? dKey.qs[i].acc.join('  /  ') : '';
+        h += `<div class="dg-da"><div class="dg-dq"><b>Q${i + 1}.</b> ${esc(q.q)}</div>
+          <div class="dg-dans">${esc((ar[i] || '').toString()) || '<i class="dg-dim">no answer</i>'}</div>
+          ${accTxt ? `<div class="dg-dim">Expected: ${esc(accTxt)}</div>` : ''}
+          ${r ? `<label class="dg-mini">Mark <input class="dg-in xs" type="number" min="0" max="${mx}" step="1" value="${m}" data-d="setmark" data-sid="${esc(sid)}" data-i="${i}"> / ${mx}</label>` : ''}</div>`;
+      });
+      return h + (r && r.ov && Object.keys(r.ov).length ? `<button type="button" class="btn" data-d="unover" data-sid="${esc(sid)}">Reset to auto-marked</button>` : '') + '</div>';
+    }
+
+    /* ----- results as a review list: by question, identical answers grouped, one click to change many students at once ----- */
+    let dTab = 'q', dOnlyReview = false, dSel = new Set(), dGC = {};
+    const dAnsOf = (sid, i) => { const a = dAns[sid] && dAns[sid].a; const v = a == null ? '' : a[i]; return v == null ? '' : String(v); };
+    function dGroups(i) {
+      const map = new Map();
+      Object.keys(dAns).forEach((sid) => {
+        const raw = dAnsOf(sid, i).trim();
+        const key = raw ? (dNorm(raw) || raw.toLowerCase()) : '';
+        let g = map.get(key);
+        if (!g) map.set(key, g = { key, text: raw, sids: [], marks: new Set(), fl: 0, w: '', ov: false, pending: 0 });
+        g.sids.push(sid);
+        const r = dRes[sid];
+        if (!r) { g.pending++; return; }
+        g.marks.add(+((r.m || {})[i]) || 0);
+        const f = +((r.fl || {})[i]) || 0;
+        if (f && !(r.ov && r.ov[i])) { g.fl = Math.max(g.fl, f); if (!g.w) g.w = (r.w || {})[i] || ''; }
+        if (r.ov && r.ov[i]) g.ov = true;
+      });
+      const mx = +dActive.qs[i].m || 1;
+      const rank = (g) => (g.fl === 2 ? 0 : g.fl === 1 ? 1 : (g.marks.size && Math.max(...g.marks) === 0 && g.key) ? 2 : g.key === '' ? 5 : (g.marks.size && Math.min(...g.marks) >= mx) ? 4 : 3);
+      return [...map.values()].sort((a, b) => rank(a) - rank(b) || b.sids.length - a.sids.length || a.text.localeCompare(b.text));
+    }
+    const dName = (sid) => (dAns[sid] && dAns[sid].n) || (dRoster[sid] && dRoster[sid].name) || sid;
+    function dToCheck() { let n = 0; if (!dActive) return 0; dActive.qs.forEach((_, i) => dGroups(i).forEach((g) => { if (g.fl) n++; })); return n; }
+    function dQuestionHTML(i) {
+      const q = dActive.qs[i], mx = +q.m || 1, kq = dKey && dKey.qs[i];
+      let groups = dGroups(i); dGC[i] = groups;
+      const allMarks = []; groups.forEach((g) => g.sids.forEach((s) => { if (dRes[s]) allMarks.push(+((dRes[s].m || {})[i]) || 0); }));
+      const full = allMarks.filter((m) => m >= mx).length, chk = groups.filter((g) => g.fl).length;
+      const shown = dOnlyReview ? groups.filter((g) => g.fl) : groups;
+      if (dOnlyReview && !shown.length) return '';
+      let h = `<section class="dg-qs"><div class="dg-qhead"><div><b>Q${i + 1}</b> ${esc(q.q)} <span class="dg-dim">[${mx} mark${mx === 1 ? '' : 's'}]</span></div>
+        <div class="dg-dim">${kq ? 'Accepted: ' + esc(kq.acc.join('  /  ')) + ' · ' : ''}${allMarks.length ? Math.round(full / allMarks.length * 100) + '% full marks' : 'no answers yet'}${chk ? ` · <b class="dg-chk">${chk} to check</b>` : ''}</div></div>`;
+      shown.forEach((g, gi) => {
+        const idx = groups.indexOf(g), mk = [...g.marks].sort(), mixed = mk.length > 1, cur = mk.length === 1 ? mk[0] : null;
+        const cls = g.pending && !mk.length ? 'wait' : g.key === '' ? 'none' : mixed ? 'part' : cur >= mx ? 'ok' : cur > 0 ? 'part' : 'no';
+        const names = g.sids.map(dName).sort().join(', ');
+        const sel = dSel.has(i + '\u0001' + g.key);
+        let btns = '';
+        if (g.key !== '') {
+          if (mx <= 4) for (let v = 0; v <= mx; v++) btns += `<button type="button" class="dg-b ${cur === v ? 'on' : ''}" data-d="gmark" data-i="${i}" data-g="${idx}" data-v="${v}" title="${v === 0 ? 'No marks' : v === mx ? 'Full marks' : v + ' marks'}">${v === 0 ? '✗' : v === mx ? '✓' : v}</button>`;
+          else btns += `<button type="button" class="dg-b ${cur === 0 ? 'on' : ''}" data-d="gmark" data-i="${i}" data-g="${idx}" data-v="0">✗</button><input class="dg-in xs" type="number" min="0" max="${mx}" data-d="gmarkn" data-i="${i}" data-g="${idx}" value="${cur === null ? '' : cur}" placeholder="–" title="Marks"><button type="button" class="dg-b ${cur === mx ? 'on' : ''}" data-d="gmark" data-i="${i}" data-g="${idx}" data-v="${mx}">✓</button>`;
+          if (q.type !== 'keywords' && kq && (cur === null || cur < mx)) btns += `<button type="button" class="dg-b rem" data-d="gremember" data-i="${i}" data-g="${idx}" title="Give full marks, and accept this answer for everyone else (now and later)">✓ accept</button>`;
+        }
+        h += `<div class="dg-g ${cls}${g.fl ? ' chk' : ''}">
+          ${g.key === '' ? '<span class="dg-cb"></span>' : `<label class="dg-cb"><input type="checkbox" data-d="gsel" data-i="${i}" data-g="${idx}" ${sel ? 'checked' : ''}></label>`}
+          <div class="dg-gmain"><div class="dg-gtxt">${g.key === '' ? '<i class="dg-dim">no answer</i>' : esc(g.text)}</div>
+          <div class="dg-gmeta"><span class="dg-n">${g.sids.length > 1 ? '×' + g.sids.length : '1'}</span> ${esc(names)}${g.fl ? ` <span class="dg-tag t${g.fl}">${g.fl === 1 ? '≈ marked by meaning' : '? close, not awarded'}${g.w ? ': ' + esc(g.w) : ''}</span>` : ''}${g.ov ? ' <span class="dg-tag t0">edited</span>' : ''}${mixed ? ' <span class="dg-tag t0">mixed marks</span>' : ''}</div></div>
+          <div class="dg-gb">${btns}</div></div>`;
+      });
+      return h + '</section>';
+    }
+    function dTabsHTML(marked, avg) {
+      const n = dToCheck();
+      return `<div class="dg-head"><h3>${esc(dActive.title)}</h3><div class="dg-row"><button type="button" class="btn" data-d="csv">⬇ CSV</button><button type="button" class="btn" data-d="remark" title="Mark everyone again (your manual changes are kept)">↻ Re-mark</button><button type="button" class="btn" data-d="home">← Back</button></div></div>
+        <div class="dg-sub">${Object.keys(dAns).length} submitted · ${marked} marked${avg === null ? '' : ' · class average ' + avg + '%'} · ${dActive.open ? 'open' : 'closed'}${dKey ? '' : ' · <b>answer key not loaded: marks appear when the owner’s page is open</b>'} · ${dDictState === 'ok' ? 'synonym dictionary on' : dDictState === 'missing' ? '<b>synonyms.json not found: using the built-in GCSE equivalents only</b>' : 'loading dictionary…'}</div>
+        <div class="dg-tabs"><button type="button" class="dg-tab ${dTab === 'q' ? 'on' : ''}" data-d="tab" data-v="q">By question</button><button type="button" class="dg-tab ${dTab === 's' ? 'on' : ''}" data-d="tab" data-v="s">By student</button>
+        ${dTab === 'q' ? `<label class="dg-mini dg-sp2"><input type="checkbox" data-d="onlyrev" ${dOnlyReview ? 'checked' : ''}> Only answers to check (${n})</label>` : ''}</div>`;
+    }
+    function dBulkHTML() {
+      if (!dSel.size) return '<div class="dg-bulk off">Tick answers to change several at once, or <button type="button" class="link-btn" data-d="selflag">tick everything to check</button>. Pressing a mark that is already selected confirms it.</div>';
+      let ns = 0; dSel.forEach((k) => { const [i, key] = k.split('\u0001'); const g = (dGC[+i] || []).find((x) => x.key === key); if (g) ns += g.sids.length; });
+      return `<div class="dg-bulk"><b>${dSel.size}</b> answer${dSel.size === 1 ? '' : 's'} ticked (${ns} students): <button type="button" class="dg-b" data-d="bulk" data-v="keep" title="Leave each mark as it is and stop flagging these">✓ Looks right</button><button type="button" class="dg-b" data-d="bulk" data-v="0">✗ No marks</button><button type="button" class="dg-b" data-d="bulk" data-v="full">✓ Full marks</button><button type="button" class="link-btn" data-d="selclear">Clear ticks</button></div>`;
+    }
+    function dResultsHTML() {
+      const a = dActive; if (!a) return dHomeHTML();
+      const sids = Object.keys({ ...dRoster, ...dAns });
+      const marked = sids.filter((s) => dRes[s]);
+      const avg = marked.length ? Math.round(marked.reduce((s, k) => s + (dRes[k].s / (dRes[k].t || 1)), 0) / marked.length * 100) : null;
+      if (dTab === 's') return dStudentsHTML();
+      let h = dTabsHTML(marked.length, avg);
+      if (!Object.keys(dAns).length) return h + `<div class="dg-empty">Nobody has handed in yet. ${Object.keys(dRoster).length} student${Object.keys(dRoster).length === 1 ? ' is' : 's are'} in the class.</div>`;
+      h += dBulkHTML() + '<div class="dg-qlist">' + a.qs.map((_, i) => dQuestionHTML(i)).join('') + '</div>';
+      if (dOnlyReview && !dToCheck()) h += '<div class="dg-empty">Nothing needs checking. Everything was marked cleanly.</div>';
+      return h + '<p class="dg-sub">Identical answers are grouped, so one click marks every student who wrote it. “✓ accept” also teaches this diagnostic that answer, so it counts for later students too.</p>';
+    }
+    async function dApply(items) {   // items: [{ i, sids:[], v:'full'|number }]
+      if (!dActive) return;
+      const out = {};
+      items.forEach((it) => {
+        const mx = +dActive.qs[it.i].m || 1;
+        const nv = it.v === 'full' ? mx : it.v === 'keep' ? null : Math.min(mx, Math.max(0, Math.round(+it.v || 0)));
+        it.sids.forEach((sid) => {
+          const base = out[sid] || dRes[sid]; if (!base) return;
+          const n = out[sid] || { ...base, m: { ...(base.m || {}) }, ov: { ...(base.ov || {}) }, fl: { ...(base.fl || {}) }, w: { ...(base.w || {}) } };
+          const v = nv === null ? (+((base.m || {})[it.i]) || 0) : nv;
+          n.m[it.i] = v; n.ov[it.i] = true; delete n.fl[it.i]; delete n.w[it.i];
+          n.s = dActive.qs.reduce((s, _, k) => s + (+n.m[k] || 0), 0);
+          out[sid] = n;
+        });
+      });
+      if (Object.keys(out).length) await update(cp(`diagRes/${dActive.id}`), out).catch(dbError);
+    }
+    async function dResultsClick(d, t) {
+      if (d === 'tab') { dTab = t.dataset.v; renderDiag(); return true; }
+      if (d === 'gmark') { const g = (dGC[+t.dataset.i] || [])[+t.dataset.g]; if (g) await dApply([{ i: +t.dataset.i, sids: g.sids, v: +t.dataset.v }]); return true; }
+      if (d === 'gremember') {
+        const i = +t.dataset.i, g = (dGC[i] || [])[+t.dataset.g]; if (!g || !dKey || !dKey.qs[i]) return true;
+        const kq = dKey.qs[i], line = kq.type === 'number' ? String(dParseNum(g.text) ?? g.text) : g.text.trim().slice(0, 200);
+        if (line && !kq.acc.includes(line) && kq.acc.length < 12) {
+          kq.acc.push(line);
+          set(ref(db, `diagKeys/${classCode}`), { id: dKey.id, spell: dKey.spell, qs: dKey.qs.map((q) => ({ type: q.type, acc: q.acc, tol: q.tol, m: q.m })) }).catch(dbError);
+        }
+        await dApply([{ i, sids: g.sids, v: 'full' }]);
+        dMarkPending(true);
+        return true;
+      }
+      if (d === 'selflag') { dActive.qs.forEach((_, i) => dGroups(i).forEach((g) => { if (g.fl) dSel.add(i + '\u0001' + g.key); })); renderDiag(); return true; }
+      if (d === 'selclear') { dSel.clear(); renderDiag(); return true; }
+      if (d === 'bulk') {
+        const items = [];
+        dSel.forEach((k) => { const [i, key] = k.split('\u0001'); const g = (dGC[+i] || []).find((x) => x.key === key); if (g) items.push({ i: +i, sids: g.sids, v: t.dataset.v === 'full' ? 'full' : t.dataset.v === 'keep' ? 'keep' : 0 }); });
+        dSel.clear(); await dApply(items); renderDiag(); return true;
+      }
+      return false;
+    }
+    function dResultsChange(t) {
+      if (t.dataset.d === 'gsel') { const g = (dGC[+t.dataset.i] || [])[+t.dataset.g]; if (g) { const k = t.dataset.i + '\u0001' + g.key; if (t.checked) dSel.add(k); else dSel.delete(k); renderDiag(); } return true; }
+      if (t.dataset.d === 'onlyrev') { dOnlyReview = t.checked; renderDiag(); return true; }
+      if (t.dataset.d === 'gmarkn') { const g = (dGC[+t.dataset.i] || [])[+t.dataset.g]; if (g && t.value !== '') dApply([{ i: +t.dataset.i, sids: g.sids, v: +t.value }]); return true; }
+      return false;
+    }
+
+    /* ----- actions ----- */
+    function dBlank() { return { id: dNewId(), title: '', spell: true, qs: [dBlankQ()], _new: true }; }
+    function dBlankQ() { return { q: '', type: 'text', acc: '', tol: '', m: '' }; }
+    function dValidate(it) {
+      if (!it.title.trim()) return 'Give the diagnostic a title.';
+      if (!it.qs.length) return 'Add at least one question.';
+      if (it.qs.length > 40) return 'A diagnostic can have up to 40 questions.';
+      for (let i = 0; i < it.qs.length; i++) {
+        const q = it.qs[i];
+        if (!q.q.trim()) return `Question ${i + 1} has no text.`;
+        const acc = dLines(q.acc);
+        if (!acc.length) return `Question ${i + 1} needs an accepted answer.`;
+        if (q.type === 'number' && dParseNum(acc[0]) === null) return `Question ${i + 1}: the correct value must be a number.`;
+      }
+      return '';
+    }
+    function dCsv() {
+      const a = dActive; if (!a) return;
+      const sids = Object.keys({ ...dRoster, ...dAns });
+      const nm = (s) => (dAns[s] && dAns[s].n) || (dRoster[s] && dRoster[s].name) || s;
+      sids.sort((x, y) => nm(x).localeCompare(nm(y)));
+      const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+      const rows = [['Student', 'Status', ...a.qs.map((_, i) => 'Q' + (i + 1)), 'Total', 'Out of', 'Percent'].map(q).join(',')];
+      sids.forEach((s) => {
+        const r = dRes[s];
+        rows.push([nm(s), r ? 'Marked' : dAns[s] ? 'Submitted' : 'Not submitted', ...a.qs.map((_, i) => (r ? +((r.m || {})[i]) || 0 : '')), r ? r.s : '', r ? r.t : '', r ? Math.round(r.s / (r.t || 1) * 100) : ''].map(q).join(','));
+      });
+      const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv' });
+      const u = URL.createObjectURL(blob), el = document.createElement('a');
+      el.href = u; el.download = (a.title || 'diagnostic').replace(/[^\w\- ]+/g, '').trim() + ' results.csv';
+      document.body.appendChild(el); el.click(); el.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000);
+    }
+    async function dDeploy(id) {
+      const it = dLib.find((x) => x.id === id); if (!it || !classCode) return;
+      const bad = dValidate(it); if (bad) { dMsg = bad; renderDiag(); return; }
+      if (dActive && !confirm('This replaces the diagnostic already on this class, including its results. Deploy anyway?')) return;
+      const runId = dNewId(), code = classCode;
+      const pub = { id: runId, title: it.title.trim().slice(0, 80), open: true, created: Date.now(), qs: it.qs.map((q) => ({ q: q.q.trim().slice(0, 600), m: dMarksOf(q) })) };
+      try {
+        await set(ref(db, `diagKeys/${code}`), dKeyOf(it, runId));
+        const up = { 'diag/active': pub, 'diag/reveal': null };
+        if (dActive) { up[`diagAns/${dActive.id}`] = null; up[`diagRes/${dActive.id}`] = null; }
+        await update(ref(db, `classes/${code}`), up);
+        dMsg = ''; dView = 'results';
+      } catch (e) { dMsg = 'Could not deploy: ' + e.message + ' (have the new database rules been published?)'; }
+      renderDiag();
+    }
+    async function dSetMark(sid, i, val) {
+      const r = dRes[sid], q = dActive.qs[i]; if (!r || !q) return;
+      const mx = +q.m || 1, v = Math.min(mx, Math.max(0, Math.round(+val || 0)));
+      const n = { ...r, m: { ...(r.m || {}) }, ov: { ...(r.ov || {}) } };
+      n.m[i] = v; n.ov[i] = true;
+      n.s = dActive.qs.reduce((s, _, k) => s + (+n.m[k] || 0), 0);
+      await set(cp(`diagRes/${dActive.id}/${sid}`), n).catch(dbError);
+    }
+    async function dActionClick(e) {
+      const t = e.target.closest('[data-d]'); if (!t) return;
+      const d = t.dataset.d;
+      if (d === 'setmark') return;
+      if (dView === 'edit') {
+        const it = dEdit;
+        if (d === 'qadd') { it.qs.push(dBlankQ()); return dRedrawEdit(); }
+        if (d === 'qdel') { if (it.qs.length > 1) it.qs.splice(+t.dataset.i, 1); return dRedrawEdit(); }
+        if (d === 'qup' || d === 'qdn') { const i = +t.dataset.i, j = d === 'qup' ? i - 1 : i + 1; if (it.qs[j]) { [it.qs[i], it.qs[j]] = [it.qs[j], it.qs[i]]; } return dRedrawEdit(); }
+        if (d === 'paste') { const p = document.getElementById('dg-paste'); p.hidden = !p.hidden; return; }
+        if (d === 'pastego') {
+          const lines = dLines(document.getElementById('dg-paste-t').value); let added = 0;
+          lines.forEach((ln) => {
+            const parts = ln.split('|').map((x) => x.trim()); if (parts.length < 2 || !parts[0] || !parts[1]) return;
+            const isKw = parts[1].includes(';'), isNum = !isKw && /^[-+]?(\d+\.?\d*|\.\d+)$/.test(parts[1]);
+            const acc = isKw ? parts[1].split(';').map((x) => x.trim()).filter(Boolean) : isNum ? [parts[1]] : parts[1].split('/').map((x) => x.trim()).filter(Boolean);
+            it.qs.push({ q: parts[0], type: isKw ? 'keywords' : isNum ? 'number' : 'text', acc: acc.join('\n'), tol: '', m: parts[2] && /^\d+$/.test(parts[2]) ? parts[2] : '' });
+            added++;
+          });
+          if (it.qs.length > 1 && !it.qs[0].q.trim() && !it.qs[0].acc.trim()) it.qs.shift();
+          dMsg = added ? '' : 'No lines were in the form  question | answer | marks.';
+          return dRedrawEdit();
+        }
+        if (d === 'cancel') { dView = 'home'; dEdit = null; dMsg = ''; return renderDiag(); }
+        if (d === 'save') {
+          const bad = dValidate(it);
+          if (bad) { document.getElementById('dg-err').textContent = bad; return; }
+          const out = { id: it.id, title: it.title.trim(), spell: it.spell !== false, qs: it.qs.map((q) => ({ q: q.q.trim(), type: q.type, acc: dLines(q.acc).join('\n'), tol: q.tol === '' ? '' : String(q.tol), m: q.m === '' ? '' : String(q.m) })) };
+          dPersist(out); dEdit = null; dView = 'home'; dMsg = ''; return renderDiag();
+        }
+        return;
+      }
+      if (await dResultsClick(d, t)) return;
+      if (d === 'close') { dModal.hidden = true; return; }
+      if (d === 'home') { dView = 'home'; return renderDiag(); }
+      if (d === 'results') { dView = 'results'; return renderDiag(); }
+      if (d === 'new') { dEdit = dBlank(); dView = 'edit'; dMsg = ''; return dRedrawEdit(); }
+      if (d === 'edit') { const it = dLib.find((x) => x.id === t.dataset.id); if (it) { dEdit = JSON.parse(JSON.stringify(it)); dView = 'edit'; dMsg = ''; dRedrawEdit(); } return; }
+      if (d === 'dup') { const it = dLib.find((x) => x.id === t.dataset.id); if (it) { const c = JSON.parse(JSON.stringify(it)); c.id = dNewId(); c.title = (c.title + ' (copy)').slice(0, 80); dPersist(c); renderDiag(); } return; }
+      if (d === 'del') { const it = dLib.find((x) => x.id === t.dataset.id); if (it && confirm(`Delete “${it.title}” from your saved diagnostics? (A copy already deployed to a class is not affected.)`)) { dForget(it.id); renderDiag(); } return; }
+      if (d === 'deploy') return dDeploy(t.dataset.id);
+      if (d === 'toggle' && dActive) { await update(cp('diag/active'), { open: !dActive.open }).catch(dbError); return; }
+      if (d === 'reveal' && dActive) {
+        if (dReveal) { await set(cp('diag/reveal'), null).catch(dbError); return; }
+        if (!dKey) { dMsg = 'The answer key is not loaded. Open this class from the account that deployed it.'; return renderDiag(); }
+        if (!confirm('Students who have submitted will be able to see the accepted answers. Show them?')) return;
+        const a = {}; dKey.qs.forEach((q, i) => { a[i] = (q.type === 'keywords' ? q.acc.join('; ') : q.acc.join('  /  ')).slice(0, 300); });
+        await set(cp('diag/reveal'), { id: dActive.id, a }).catch(dbError); return;
+      }
+      if (d === 'remove' && dActive) {
+        if (!confirm('Remove this diagnostic and all its results from the class? Export the CSV first if you want to keep them.')) return;
+        const id = dActive.id;
+        await update(ref(db, `classes/${classCode}`), { diag: null, [`diagAns/${id}`]: null, [`diagRes/${id}`]: null }).catch(dbError);
+        remove(ref(db, `diagKeys/${classCode}`)).catch(() => {});
+        return;
+      }
+      if (d === 'csv') return dCsv();
+      if (d === 'remark') { dMarkPending(true); return; }
+      if (d === 'row') { const sid = t.dataset.sid; dOpenSid = dOpenSid === sid ? null : sid; return renderDiag(); }
+      if (d === 'unover') {
+        const sid = t.dataset.sid, ans = dAns[sid]; if (!ans || !dKey) return;
+        const r = dMarkAll(dKey, dArr(ans.a).length ? dArr(ans.a) : ans.a || {}, null); r.for = ans.t;
+        await set(cp(`diagRes/${dActive.id}/${sid}`), r).catch(dbError); return;
+      }
+    }
+    function dRedrawEdit() { dBody.innerHTML = dEditHTML(); }
+    dBody.addEventListener('click', (e) => { if (e.target.closest('input,select,textarea') && !e.target.closest('button')) return; dActionClick(e); });
+    dBody.addEventListener('change', (e) => {
+      const t = e.target;
+      if (t.dataset.d === 'setmark') { dSetMark(t.dataset.sid, +t.dataset.i, t.value); return; }
+      if (dResultsChange(t)) return;
+      if (dView !== 'edit' || !dEdit) return;
+      if (t.id === 'dg-spell') dEdit.spell = t.checked;
+      if (t.dataset.f === 'type') { dEdit.qs[+t.dataset.i].type = t.value; dRedrawEdit(); }
+    });
+    dBody.addEventListener('input', (e) => {
+      const t = e.target;
+      if (dView !== 'edit' || !dEdit) return;
+      if (t.id === 'dg-title') dEdit.title = t.value;
+      else if (t.dataset.f && t.dataset.f !== 'type') dEdit.qs[+t.dataset.i][t.dataset.f] = t.value;
+    });
+    dModal.addEventListener('mousedown', (e) => { if (e.target === dModal && dView !== 'edit') dModal.hidden = true; });
+    document.getElementById('diag-btn').addEventListener('click', async () => {
+      dView = dActive ? 'results' : 'home'; dMsg = '';
+      dModal.hidden = false; renderDiag();
+      await dLoadLib(); renderDiag();
+    });
+
 
     const classSelect = document.getElementById('class-select');
     const editBtn = document.getElementById('edit-class');

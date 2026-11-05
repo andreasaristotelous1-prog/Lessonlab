@@ -208,6 +208,32 @@
     #code-screen .cs-hint { font-size: clamp(.8rem, 1.8vw, 1.1rem); opacity: .6; margin-top: 1vh; }
     #code-screen #cs-close { position: absolute; top: 14px; right: 18px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.16); color: #fff; font-size: 1.4rem; cursor: pointer; }
     #code-screen #cs-close:hover { background: rgba(255,255,255,.28); }
+    /* ---------- DIAGNOSTICS ---------- */
+    #dg-fab { position: fixed; right: 16px; bottom: 16px; z-index: 8000; display: none; padding: 10px 16px; border: none; border-radius: 999px; background: #7d68d0; color: #fff; font-weight: 700; font-size: .95rem; box-shadow: 0 8px 22px rgba(125,104,208,.4); cursor: pointer; }
+    #dg-fab.on { display: block; }
+    #dg-fab.pulse { animation: dgpulse 1.6s ease-in-out infinite; }
+    @keyframes dgpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+    #dg-ov { position: fixed; inset: 0; z-index: 9000; display: none; overflow: auto; background: #f5f3fb; padding: 20px 14px 40px; }
+    #dg-ov.on { display: block; }
+    .dg-card { max-width: 720px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 22px 20px; box-shadow: 0 14px 40px rgba(110,100,170,.15); }
+    .dg-card h2 { margin: 0 0 2px; font-size: 1.45rem; letter-spacing: -.01em; color: #4a3a99; }
+    .dg-card .dg-hint { margin: 0 0 16px; color: var(--muted); font-size: .92rem; }
+    .dg-qs { display: grid; gap: 16px; }
+    .dg-qn { font-weight: 600; line-height: 1.35; }
+    .dg-qn .dg-m { color: var(--muted); font-weight: 500; font-size: .85rem; margin-left: 6px; white-space: nowrap; }
+    .dg-ta { width: 100%; margin-top: 7px; padding: 11px 13px; font: inherit; font-size: 1.02rem; color: var(--text); background: #fff; border: 1.5px solid #d9d4ee; border-radius: 13px; outline: none; resize: vertical; min-height: 46px; }
+    .dg-ta:focus { border-color: #7d68d0; box-shadow: 0 0 0 3px rgba(125,104,208,.2); }
+    .dg-go { margin-top: 20px; width: 100%; padding: 14px; border: none; border-radius: 14px; background: #7d68d0; color: #fff; font-weight: 700; font-size: 1.05rem; cursor: pointer; }
+    .dg-go:disabled { opacity: .55; cursor: default; }
+    .dg-back { background: none; border: none; color: #7d68d0; font-weight: 600; font-size: .9rem; cursor: pointer; padding: 6px 0 14px; }
+    .dg-score { text-align: center; margin: 6px 0 18px; }
+    .dg-score b { display: block; font-size: 3rem; color: #4a3a99; line-height: 1.1; }
+    .dg-score span { color: var(--muted); font-weight: 500; }
+    .dg-res { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); margin-top: 10px; }
+    .dg-res.ok { background: #edf8f2; border-color: #bfe3cf; } .dg-res.no { background: #fdf0f1; border-color: #f0c5ca; } .dg-res.part { background: #fff7e8; border-color: #f0dcae; }
+    .dg-res .a { margin-top: 4px; font-weight: 600; white-space: pre-wrap; word-break: break-word; }
+    .dg-res .k { margin-top: 4px; font-size: .85rem; color: #2c6e50; }
+    .dg-wait { text-align: center; color: var(--muted); padding: 10px 0 4px; }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -725,6 +751,94 @@
           else document.getElementById('class-title').textContent = snap.val().name || 'Class';
         });
 
+        // Diagnostics: a teacher deploys one, you type your answers, it is marked for you
+        (function diagnostics() {
+          const ov = document.getElementById('dg-ov'), card = document.getElementById('dg-card'), fab = document.getElementById('dg-fab');
+          const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+          const arr = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.keys(v).sort((a, b) => a - b).map((k) => v[k]) : []);
+          let active = null, mine = null, res = null, reveal = null, subs = [], lastKey = '', autoShown = '', submitting = false;
+          const draftKey = () => `ll_diag_${code}_${active.id}_${safeId}`;
+          const readDraft = () => { try { return JSON.parse(localStorage.getItem(draftKey()) || '[]'); } catch (_) { return []; } };
+          const saveDraft = (a) => { try { localStorage.setItem(draftKey(), JSON.stringify(a)); } catch (_) {} };
+          const values = () => active.qs.map((_, i) => { const t = document.getElementById('dg-a' + i); return t ? t.value : ''; });
+
+          async function submit(auto) {
+            if (!active || mine || submitting) return;
+            const vals = active.qs.map((_, i) => { const t = document.getElementById('dg-a' + i); return t ? t.value : (readDraft()[i] || ''); });
+            if (auto && !vals.some((v) => v.trim())) return;
+            if (!auto && !confirm('Hand in your answers now? You cannot change them afterwards.')) return;
+            submitting = true;
+            const a = {}; vals.forEach((v, i) => { a[i] = v.slice(0, 500); });
+            try {
+              await set(ref(db, `${base}/diagAns/${active.id}/${safeId}`), { n: studentName.slice(0, 40), t: Date.now(), a });
+              try { localStorage.removeItem(draftKey()); } catch (_) {}
+            } catch (e) { alert('Could not hand in: ' + e.message); }
+            submitting = false;
+          }
+
+          function render() {
+            if (!active) { ov.classList.remove('on'); fab.classList.remove('on', 'pulse'); lastKey = ''; return; }
+            const state = mine ? (res ? 'result' : 'wait') : active.open ? 'answer' : 'closed';
+            const key = state + '|' + active.id + '|' + (state === 'result' ? JSON.stringify(res) + (reveal ? 'r' : '') : '');
+            fab.classList.add('on');
+            fab.classList.toggle('pulse', state === 'answer' && !ov.classList.contains('on'));
+            fab.textContent = state === 'result' ? `📝 ${res.s}/${res.t}` : state === 'wait' ? '📝 Handed in' : state === 'closed' ? '📝 Closed' : '📝 Diagnostic';
+            if (state === 'answer' && autoShown !== active.id) { autoShown = active.id; ov.classList.add('on'); }
+            if (key === lastKey) return;
+            lastKey = key;
+            const title = esc(active.title);
+            if (state === 'answer') {
+              const d = readDraft();
+              card.innerHTML = `<button class="dg-back" type="button" id="dg-hide">← Back to the lesson</button><h2>${title}</h2>
+                <p class="dg-hint">Type your answer to every question, then hand in. Spelling counts, so check your work.</p>
+                <div class="dg-qs">${active.qs.map((q, i) => `<div><div class="dg-qn">${i + 1}. ${esc(q.q)}<span class="dg-m">[${+q.m || 1} mark${(+q.m || 1) === 1 ? '' : 's'}]</span></div>
+                <textarea class="dg-ta" id="dg-a${i}" rows="2" maxlength="500" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Answer ${i + 1}">${esc(d[i] || '')}</textarea></div>`).join('')}</div>
+                <button class="dg-go" type="button" id="dg-submit">Hand in</button>`;
+              document.getElementById('dg-hide').onclick = () => ov.classList.remove('on');
+              document.getElementById('dg-submit').onclick = () => submit(false);
+              card.querySelectorAll('.dg-ta').forEach((t) => t.addEventListener('input', () => saveDraft(values())));
+            } else if (state === 'closed') {
+              card.innerHTML = `<button class="dg-back" type="button" id="dg-hide">← Back to the lesson</button><h2>${title}</h2><p class="dg-hint">Your teacher has closed this diagnostic.</p>`;
+              document.getElementById('dg-hide').onclick = () => ov.classList.remove('on');
+            } else {
+              const ans = arr(mine.a), rv = reveal && reveal.id === active.id ? reveal.a || {} : null;
+              let h = `<button class="dg-back" type="button" id="dg-hide">← Back to the lesson</button><h2>${title}</h2>`;
+              if (!res) h += '<p class="dg-hint">Handed in ✓</p><div class="dg-wait">Your answers are being marked… keep this page open.</div>';
+              else {
+                const pct = Math.round(res.s / (res.t || 1) * 100);
+                h += `<div class="dg-score"><b>${res.s} / ${res.t}</b><span>${pct}%</span></div>`;
+              }
+              h += active.qs.map((q, i) => {
+                const mx = +q.m || 1, m = res ? +((res.m || {})[i]) || 0 : null;
+                const cls = m === null ? '' : m >= mx ? 'ok' : m > 0 ? 'part' : 'no';
+                const mark = m === null ? '' : m >= mx ? (mx > 1 ? `✓ ${mx}/${mx}` : '✓') : m > 0 ? `${m}/${mx}` : '✗';
+                return `<div class="dg-res ${cls}"><div class="dg-qn">${i + 1}. ${esc(q.q)}<span class="dg-m">${mark}</span></div>
+                  <div class="a">${esc(ans[i]) || '<i>no answer</i>'}</div>${rv && rv[i] != null && res ? `<div class="k">Accepted: ${esc(rv[i])}</div>` : ''}</div>`;
+              }).join('');
+              card.innerHTML = h;
+              document.getElementById('dg-hide').onclick = () => ov.classList.remove('on');
+            }
+          }
+          fab.addEventListener('click', () => { lastKey = lastKey; ov.classList.add('on'); render(); });
+
+          onValue(ref(db, `${base}/diag/reveal`), (s) => { reveal = s.val(); render(); });
+          onValue(ref(db, `${base}/diag/active`), (s) => {
+            const a = s.val(), wasOpen = active && active.open, prevId = active && active.id;
+            if (!a || !prevId || a.id !== prevId) {
+              subs.forEach((u) => u()); subs = []; mine = null; res = null; lastKey = '';
+              if (a) {
+                active = { ...a, qs: arr(a.qs) };
+                subs.push(onValue(ref(db, `${base}/diagAns/${a.id}/${safeId}`), (x) => { mine = x.val(); render(); }));
+                subs.push(onValue(ref(db, `${base}/diagRes/${a.id}/${safeId}`), (x) => { res = x.val(); render(); }));
+              } else active = null;
+              render(); return;
+            }
+            active = { ...a, qs: arr(a.qs) };
+            if (wasOpen && !active.open && !mine) submit(true);   // teacher closed it: hand in whatever was typed
+            lastKey = ''; render();
+          });
+        })();
+
         // Teacher removed this student
         onValue(studentRef, async (snap) => {
           if (!snap.exists() && !ended) {
@@ -796,6 +910,9 @@
       setTimeout(() => { banner.style.top = '-100px'; }, 3500);
     }
   </script>
+
+  <button id="dg-fab" type="button" aria-label="Open diagnostic">📝 Diagnostic</button>
+  <div id="dg-ov" role="dialog" aria-modal="true" aria-label="Diagnostic"><div class="dg-card" id="dg-card"></div></div>
 
   <div id="code-screen" hidden role="dialog" aria-modal="true" aria-label="Class code">
     <button type="button" id="cs-close" aria-label="Close">✕</button>
