@@ -2688,7 +2688,7 @@
     const D_NEG = new Set(['not', 'no', 'never', 'cannot', 'cant', 'dont', 'doesnt', 'didnt', 'isnt', 'arent', 'wont', 'wouldnt', 'shouldnt', 'without', 'neither', 'nor', 'none', 'nothing', 'nt']);
     const D_IRR = { ran:'run', gave:'give', given:'give', took:'take', taken:'take', made:'make', lost:'lose', froze:'freeze', frozen:'freeze', began:'begin', begun:'begin', fell:'fall', fallen:'fall', grew:'grow', grown:'grow', went:'go', gone:'go', got:'get', shrank:'shrink', shrunk:'shrink', broke:'break', broken:'break', sank:'sink', rose:'rise', risen:'rise', burnt:'burn', held:'hold', kept:'keep', left:'leave', saw:'see', seen:'see', shook:'shake', shaken:'shake', flew:'fly', swam:'swim', drew:'draw', drawn:'draw', ate:'eat', eaten:'eat', better:'good', worse:'bad', less:'little', more:'much', fewer:'few', atoms:'atom', electrons:'electron', people:'person', lives:'life', leaves:'leaf', gases:'gas', bonds:'bond' };
     const D_GROUPS_TXT = `increase rise grow expand bigger larger greater more higher gain raise climb enlarge swell multiply up
-decrease reduce fall drop lower smaller less fewer shrink decline diminish lessen contract down
+decrease reduce reduction fall drop lower smaller less fewer shrink decline diminish lessen contract down
 fast quick rapid speedy swift quickly rapidly
 accelerate quicken hasten speed
 slow sluggish
@@ -2716,8 +2716,9 @@ regular ordered orderly neat uniform patterned pattern
 tight tightly close closely compact packed dense crowded
 apart spread scattered spaced distant far
 gap space
-strong powerful
-weak feeble
+strong powerful more greater
+weak feeble less lower reduced
+easy easily simple simply readily
 attract pull draw
 repel push
 hot warm heated heat warmth thermal
@@ -2864,6 +2865,99 @@ energy power`;
       for (let j = best.lo; j <= best.hi; j++) if (D_NEG.has(ans[j]) && !need.some((n) => D_NEG.has(n))) return { ok: false, neg: true, got: need.length, of: need.length };
       return { ok: true, lv: best.lv, how: best.how, span: [best.lo, best.hi] };
     }
+    /* ----- mark-scheme sentences: write a mark point the way it appears in the mark scheme, and the answer is matched by meaning ----- */
+    const D_LOW = new Set(['one', 'both', 'form', 'forms', 'there', 'also', 'therefore', 'thus', 'hence', 'means', 'mean', 'so', 'however', 'only', 'become', 'makes', 'make', 'cause', 'causes', 'allows', 'reason', 'explain', 'describe', 'state', 'give', 'why', 'how', 'because']);
+    const D_ANT = [
+      [['increase', 'rise', 'grow', 'expand', 'bigger', 'larger', 'greater', 'higher', 'up', 'raise', 'faster', 'more'], ['decrease', 'reduce', 'fall', 'drop', 'lower', 'smaller', 'less', 'fewer', 'shrink', 'decline', 'down', 'slower']],
+      [['strong', 'strongly', 'stronger', 'powerful', 'tight', 'tightly', 'strengthen'], ['weak', 'weaker', 'weakly', 'feeble', 'loose', 'loosely', 'weaken']],
+      [['fast', 'quick', 'rapid'], ['slow']],
+      [['gain', 'accept', 'receive'], ['lose', 'shed', 'donate']],
+      [['hot', 'warm', 'heat', 'heated'], ['cold', 'cool', 'cooled']],
+      [['positive', 'plus'], ['negative', 'minus']],
+      [['attract', 'pull'], ['repel', 'push']],
+      [['easy', 'easily', 'easier', 'simple'], ['hard', 'harder', 'difficult', 'difficulty']],
+      [['near', 'close', 'closer', 'nearer'], ['far', 'further', 'farther', 'distant']],
+      [['inner', 'inside', 'internal'], ['outer', 'outside', 'external']],
+      [['same', 'equal', 'identical'], ['different', 'unequal']],
+      [['solid'], ['liquid', 'gas']],
+    ];
+    function dAntSide(w) {
+      const c = dCands(w);
+      for (let p = 0; p < D_ANT.length; p++) for (let s = 0; s < 2; s++) if (c.some((x) => D_ANT[p][s].includes(x))) return [p, s];
+      return null;
+    }
+    /* ----- "who is this about?": the answer must say what it is describing (by name, or "it"/"they") ----- */
+    const D_CMD = new Set(['explain', 'why', 'how', 'what', 'describe', 'state', 'give', 'suggest', 'compare', 'name', 'identify', 'outline', 'discuss', 'evaluate', 'justify', 'predict', 'which', 'who', 'does', 'do', 'happens', 'happen']);
+    const D_PRON = new Set(['it', 'its', 'itself', 'they', 'their', 'them', 'both', 'each', 'metal', 'element', 'atom', 'substance']);
+    // only questions of the form "Explain why X ..." / "Why does X ..." have an obvious subject; teachers can set one themselves
+    function dAutoSubject(question) {
+      const t = dTok(question);
+      if (!t.length || !/^(explain|why|suggest|how)$/.test(t[0]) || (t[0] === 'how' && t[1] !== 'does' && t[1] !== 'do')) return '';
+      const first = t.find((w, i) => i > 0 && !D_STOP.has(w) && !D_CMD.has(w));
+      return first || '';
+    }
+    function dOthers(question, subj) {   // the other thing(s) being compared: "… than lithium", "… and sodium"
+      const t = dTok(question), out = [];
+      t.forEach((w, i) => { if (/^(than|and|with|vs|versus|compared)$/.test(w)) { const n = t.slice(i + 1).find((x) => !D_STOP.has(x) && !D_CMD.has(x) && x !== 'to'); if (n && n !== subj) out.push(n); } });
+      return out;
+    }
+    // for every sentence: does it (really) refer to the subject?  A pronoun only counts while the answer is still talking about the subject.
+    function dSubjectRefs(sents, subj, others, spell) {
+      let topic = 'S';
+      return sents.map((s) => {
+        let ref = false;
+        s.forEach((w, i) => {
+          const isSubj = subj.some((n) => { const r = dLink(w, n, spell); return r && r.lv !== 1; });
+          const isOther = !isSubj && others.some((n) => { const r = dLink(w, n, false); return r && r.lv === 0; });
+          if (isSubj) { topic = 'S'; ref = true; }
+          else if (isOther) { const prev = s.slice(Math.max(0, i - 2), i); if (!prev.some((x) => /^(than|with|vs|versus|compared|and|to)$/.test(x)) && i <= 2) topic = 'O'; }
+          else if (D_PRON.has(w) && topic === 'S') ref = true;
+        });
+        return ref;
+      });
+    }
+    function dSentences(raw) {
+      return String(raw || '').split(/(?<=[a-z0-9)"'])[.!?]+\s+|[\n;]+/i).map(dTok).filter((t) => t.length);
+    }
+    // can the answer window say the same as this clause?  returns { ok, cov, lv, how }
+    function dClauseInWindow(toks, win, spell) {
+      let cnt = 0, lv = 0; const how = [], matchedPos = [];
+      for (const k of toks) {
+        let best = null, bi = -1;
+        win.forEach((a, i) => { if (D_STOP.has(a)) return; const r = dLink(a, k, spell); if (r && (!best || r.lv < best.lv)) { best = r; bi = i; } });
+        if (best) { cnt++; lv = Math.max(lv, best.lv); matchedPos.push(bi); if (best.how) how.push(best.how); }
+      }
+      const need = toks.length === 1 ? 1 : Math.ceil(toks.length * 0.6);
+      let conflict = false;
+      for (const k of toks) {
+        const sd = dAntSide(k); if (!sd) continue;
+        const opp = win.some((a) => { const o = dAntSide(a); return o && o[0] === sd[0] && o[1] !== sd[1]; });
+        const same = win.some((a) => { const o = dAntSide(a); return o && o[0] === sd[0] && o[1] === sd[1]; });
+        if (opp && !same) conflict = true;
+      }
+      const clauseNeg = toks.some((k) => D_NEG.has(k));
+      if (!clauseNeg) matchedPos.forEach((p) => { for (let j = Math.max(0, p - 2); j < p; j++) if (D_NEG.has(win[j])) conflict = true; });
+      return { ok: cnt >= need && !conflict, cov: cnt / toks.length, lv, how, conflict };
+    }
+    function dSentencePoint(line, qSet, sents, spell, refs) {
+      const clauses = line.split(/[,;:]|\b(?:so|because|which|but|hence|therefore|thus|where|whereas)\b|\bto form\b/i);
+      let best = null, bestNear = 0, any = false, subjMiss = false;
+      clauses.forEach((cl) => {
+        const toks = dTok(cl).filter((w) => !D_STOP.has(w) && !D_LOW.has(w) && ![...qSet].some((qt) => { const r = dLink(w, qt, false); return r && r.lv === 0; }));
+        if (!toks.length) return;
+        any = true;
+        for (let i = 0; i < sents.length; i++) {
+          [sents[i], i + 1 < sents.length ? sents[i].concat(sents[i + 1]) : null].forEach((win) => {
+            if (!win) return;
+            const r = dClauseInWindow(toks, win, spell);
+            if (r.ok && refs && !(refs[i] || (win !== sents[i] && refs[i + 1]))) { subjMiss = true; return; }
+            if (r.ok) { if (!best || r.cov > best.cov || (r.cov === best.cov && r.lv < best.lv)) best = { ...r, toks }; }
+            else if (!r.conflict) bestNear = Math.max(bestNear, r.cov);
+          });
+        }
+      });
+      return { ok: !!best, best, near: bestNear, any, subjMiss };
+    }
     function dParseNum(s) {
       let t = String(s == null ? '' : s).trim().toLowerCase();
       if (D_NUMW[t]) return +D_NUMW[t];
@@ -2886,18 +2980,39 @@ energy power`;
       }
       const ans = dTok(answer); if (!ans.length) return none;
       if (q.type === 'keywords') {
-        let hit = 0, loose = 0; const why = [];
+        let hit = 0, loose = 0; const why = [], nearPts = [];
+        const qSet = new Set(dTok(q.q || '').filter((w) => !D_STOP.has(w)));
+        const sents = dSentences(answer), flat = [].concat(...sents);
+        const subjT = dTok(q.subj || '').filter((w) => !D_STOP.has(w));
+        const refs = subjT.length ? dSubjectRefs(sents, subjT, dOthers(q.q || '', subjT[0]), spell) : null;
+        const offs = []; { let o = 0; sents.forEach((s) => { offs.push(o); o += s.length; }); }
+        const sentOf = (p) => { let k = 0; for (let j = 0; j < offs.length; j++) if (p >= offs[j]) k = j; return k; };
+        const subjName = subjT.join(' ');
+        const subjMissPts = [];
         acc.forEach((line, n) => {
-          let best = null;
+          let best = null, near = false;
+          if (!line.includes('/') && dTok(line).length >= 5) {   // a mark-scheme sentence: match by meaning
+            const sp = dSentencePoint(line, qSet, sents, spell, refs);
+            if (!sp.ok && sp.subjMiss) subjMissPts.push(n + 1);
+            if (sp.ok) { hit++; if (sp.best.lv > 0 || sp.best.cov < 1) { loose++; why.push(`point ${n + 1}: ${Math.round(sp.best.cov * 100)}% of “${sp.best.toks.join(' ')}”${sp.best.how.length ? ' (' + sp.best.how.join(', ') + ')' : ''}`); } }
+            else if (sp.any && sp.near >= 0.4) nearPts.push(n + 1);
+            return;
+          }
           line.split('/').forEach((alt) => {
             const ph = dTok(alt); if (!ph.length) return;
-            const r = dFindPhrase(ans, ph, spell);
+            const r = dFindPhrase(flat, ph, spell);
+            if (r.ok && refs) { const a = sentOf(r.span[0]), b2 = sentOf(r.span[1]); let has = false; for (let j = Math.max(0, a - 1); j <= b2; j++) if (refs[j]) has = true; if (!has) { subjMissPts.push(n + 1); return; } }
             if (r.ok && (!best || r.lv < best.lv)) best = r;
+            else if (!r.ok && (r.neg || (r.of > 1 && r.got / r.of >= 0.5))) near = true;
           });
           if (best) { hit++; if (best.lv > 0) { loose++; why.push(`point ${n + 1}: ${best.how.join(', ') || 'close wording'}`); } }
+          else if (near) nearPts.push(n + 1);
         });
         const m = Math.min(mx, hit);
-        return { m, fl: m && loose ? 1 : 0, w: m && loose ? why.join('; ').slice(0, 110) : '' };
+        if (m && loose) return { m, fl: 1, w: why.join('; ').slice(0, 110) };
+        if (m < mx && subjMissPts.length) return { m, fl: 2, w: ('point ' + [...new Set(subjMissPts)].join(', ') + ': right idea but never says what it is about (“it” / “' + subjName + '”)').slice(0, 118) };
+        if (m < mx && nearPts.length) return { m, fl: 2, w: ('point ' + nearPts.join(', ') + ' partly matches').slice(0, 110) };
+        return { m, fl: 0, w: '' };
       }
       // typed answer: all the key words, at most two extra words, nothing contradicting
       let near = 0, nearWhy = '', result = null;
@@ -2951,8 +3066,9 @@ energy power`;
     const dArr = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.keys(v).sort((a, b) => a - b).map((k) => v[k]) : []);
     const dLines = (s) => String(s || '').split('\n').map((x) => x.trim()).filter(Boolean);
     const dMarksOf = (q) => Math.min(20, Math.max(1, parseInt(q.m, 10) || (q.type === 'keywords' ? dLines(q.acc).length : 1) || 1));
-    const dKeyOf = (item, id) => ({ id, spell: item.spell !== false, qs: item.qs.map((q) => ({ type: q.type, acc: dLines(q.acc).map((x) => x.slice(0, 200)).slice(0, 12), tol: Math.abs(+q.tol || 0), m: dMarksOf(q) })) });
-    const dNormKey = (k) => ({ id: k.id, spell: k.spell !== false, qs: dArr(k.qs).map((q) => ({ type: q.type, acc: dArr(q.acc), tol: +q.tol || 0, m: +q.m || 1 })) });
+    const dSubjOf = (q) => { const s = (q.subj || '').trim(); if (/^(none|off|no)$/i.test(s)) return ''; return (s || dAutoSubject(q.q || '')).slice(0, 60); };
+    const dKeyOf = (item, id) => ({ id, spell: item.spell !== false, qs: item.qs.map((q) => ({ q: q.q.trim().slice(0, 600), type: q.type, acc: dLines(q.acc).map((x) => x.slice(0, 200)).slice(0, 12), tol: Math.abs(+q.tol || 0), m: dMarksOf(q), subj: q.type === 'keywords' ? dSubjOf(q) : '' })) });
+    const dNormKey = (k) => ({ id: k.id, spell: k.spell !== false, qs: dArr(k.qs).map((q) => ({ q: q.q || '', type: q.type, acc: dArr(q.acc), tol: +q.tol || 0, m: +q.m || 1, subj: q.subj || '' })) });
 
     function dLocalLib() { try { return JSON.parse(localStorage.getItem(DLIB_KEY) || '[]') || []; } catch (e) { return []; } }
     function dSaveLocal() { try { localStorage.setItem(DLIB_KEY, JSON.stringify(dLib)); } catch (e) {} }
@@ -3087,7 +3203,7 @@ energy power`;
         <input id="dg-title" class="dg-in" maxlength="80" placeholder="e.g. Year 10 Atomic Structure diagnostic" value="${esc(it.title)}">
         <label class="dg-check"><input type="checkbox" id="dg-spell" ${it.spell !== false ? 'checked' : ''}> Forgive a one-letter spelling slip in longer words</label>`;
       it.qs.forEach((q, i) => {
-        const ph = q.type === 'number' ? 'Correct value, e.g. 12.5 (units are ignored)' : q.type === 'keywords' ? 'One key point per line. Use / for alternatives, e.g.\natoms / particles\nvibrate / move' : 'One accepted answer per line, e.g.\nmitochondria\nmitochondrion';
+        const ph = q.type === 'number' ? 'Correct value, e.g. 12.5 (units are ignored)' : q.type === 'keywords' ? 'One mark point per line. Paste them as sentences, just as they appear in your mark scheme, e.g.\nThe electron is lost more easily.\nor use short phrases with / for alternatives, e.g.\nvibrate / move' : 'One accepted answer per line, e.g.\nmitochondria\nmitochondrion';
         h += `<div class="dg-q"><div class="dg-qh"><b>Q${i + 1}</b>
           <select data-i="${i}" data-f="type" class="dg-in sm">${Object.keys(D_TYPES).map((k) => `<option value="${k}"${q.type === k ? ' selected' : ''}>${D_TYPES[k]}</option>`).join('')}</select>
           <label class="dg-mini">Marks <input data-i="${i}" data-f="m" class="dg-in xs" type="number" min="1" max="20" value="${esc(q.m)}" placeholder="${q.type === 'keywords' ? 'auto' : '1'}"></label>
@@ -3097,7 +3213,8 @@ energy power`;
           <button type="button" class="btn" data-d="qdn" data-i="${i}"${i < it.qs.length - 1 ? '' : ' disabled'}>↓</button>
           <button type="button" class="btn" data-d="qdel" data-i="${i}">✕</button></div>
           <textarea data-i="${i}" data-f="q" class="dg-in" rows="2" maxlength="600" placeholder="Question text">${esc(q.q)}</textarea>
-          <textarea data-i="${i}" data-f="acc" class="dg-in" rows="${q.type === 'keywords' ? 3 : 2}" maxlength="1500" placeholder="${esc(ph)}">${esc(q.acc)}</textarea></div>`;
+          <textarea data-i="${i}" data-f="acc" class="dg-in" rows="${q.type === 'keywords' ? 3 : 2}" maxlength="1500" placeholder="${esc(ph)}">${esc(q.acc)}</textarea>
+          ${q.type === 'keywords' ? `<label class="dg-mini" style="margin-top:6px">Answer must be about: <input data-i="${i}" data-f="subj" class="dg-in sm" maxlength="60" value="${esc(q.subj || '')}" placeholder="${esc(dAutoSubject(q.q) ? 'auto: ' + dAutoSubject(q.q) : 'e.g. potassium (blank = no check)')}"></label><div class="modal-sub" style="margin:2px 0 0">A mark point only counts if the answer says what it is about, by name or with “it” / “they”. Type <b>none</b> to switch the check off.</div>` : ''}</div>`;
       });
       h += `<div class="dg-row"><button type="button" class="btn" data-d="qadd">+ Add question</button>
         <button type="button" class="btn" data-d="paste">⇩ Paste many</button></div>
@@ -3254,7 +3371,7 @@ energy power`;
         const kq = dKey.qs[i], line = kq.type === 'number' ? String(dParseNum(g.text) ?? g.text) : g.text.trim().slice(0, 200);
         if (line && !kq.acc.includes(line) && kq.acc.length < 12) {
           kq.acc.push(line);
-          set(ref(db, `diagKeys/${classCode}`), { id: dKey.id, spell: dKey.spell, qs: dKey.qs.map((q) => ({ type: q.type, acc: q.acc, tol: q.tol, m: q.m })) }).catch(dbError);
+          set(ref(db, `diagKeys/${classCode}`), { id: dKey.id, spell: dKey.spell, qs: dKey.qs.map((q) => ({ q: q.q || '', type: q.type, acc: q.acc, tol: q.tol, m: q.m, subj: q.subj || '' })) }).catch(dbError);
         }
         await dApply([{ i, sids: g.sids, v: 'full' }]);
         dMarkPending(true);
@@ -3278,7 +3395,7 @@ energy power`;
 
     /* ----- actions ----- */
     function dBlank() { return { id: dNewId(), title: '', spell: true, qs: [dBlankQ()], _new: true }; }
-    function dBlankQ() { return { q: '', type: 'text', acc: '', tol: '', m: '' }; }
+    function dBlankQ() { return { q: '', type: 'text', acc: '', tol: '', m: '', subj: '' }; }
     function dValidate(it) {
       if (!it.title.trim()) return 'Give the diagnostic a title.';
       if (!it.qs.length) return 'Add at least one question.';
@@ -3358,7 +3475,7 @@ energy power`;
         if (d === 'save') {
           const bad = dValidate(it);
           if (bad) { document.getElementById('dg-err').textContent = bad; return; }
-          const out = { id: it.id, title: it.title.trim(), spell: it.spell !== false, qs: it.qs.map((q) => ({ q: q.q.trim(), type: q.type, acc: dLines(q.acc).join('\n'), tol: q.tol === '' ? '' : String(q.tol), m: q.m === '' ? '' : String(q.m) })) };
+          const out = { id: it.id, title: it.title.trim(), spell: it.spell !== false, qs: it.qs.map((q) => ({ q: q.q.trim(), type: q.type, acc: dLines(q.acc).join('\n'), tol: q.tol === '' ? '' : String(q.tol), m: q.m === '' ? '' : String(q.m), subj: (q.subj || '').trim().slice(0, 60) })) };
           dPersist(out); dEdit = null; dView = 'home'; dMsg = ''; return renderDiag();
         }
         return;
