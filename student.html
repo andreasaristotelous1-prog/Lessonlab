@@ -1513,7 +1513,9 @@ window.PV = function (o) {
     function pauseSync() {
       const paused = joinedOk && soloKnown && !isSoloWork;
       const o = document.getElementById('pause-ov'); if (o) o.classList.toggle('on', paused);
-      const sa = document.querySelector('.canvas-scroll-area'); if (sa) { sa.inert = paused; }   /* nothing under the blur can be clicked, focused or tabbed to */
+      document.documentElement.classList.toggle('is-paused', paused);   // iPad Safari ignores backdrop blur here, so the page itself is blurred too
+      const sa = document.querySelector('.canvas-scroll-area'); if (sa) { sa.inert = paused; }
+      const dgo = document.getElementById('dg-ov'); if (dgo) dgo.inert = paused;   /* and nothing in a diagnostic can be typed in while paused */   /* nothing under the blur can be clicked, focused or tabbed to */
     }
     window.pauseSync = pauseSync;
     let frozen = null, placedOnce = false, viewLocked = false, teacherZoom = 1, matchZoom = false, teacherY = null, teacherX = null;
@@ -2626,43 +2628,12 @@ window.PV = function (o) {
 })();
 </script>
 <style>html, body { overscroll-behavior-x: none; }</style>
-<style>/* touch screens: stop icons staying zoomed after a tap (class is set on the first touch, cleared when a mouse or trackpad moves) */
-html.is-touch .dg-kr.clk .dg-tk:hover { transform: none !important; }
-html.is-touch .s-rail .s-btn:hover, html.is-touch .s-rail #mode-pill:hover, html.is-touch .s-rail #dg-fab:hover, html.is-touch .s-rail .code-chip:hover, html.is-touch .s-rail .me-score:hover { transform: none !important; }
-html.is-touch .emo-grid button:hover { transform: none !important; }
-html.is-touch #ended button:hover { transform: none !important; }
-html.is-touch .join-card #start-btn:hover:not(:disabled) { transform: none !important; }
-html.is-touch .xclose:hover { transform: none !important; }
-html.is-touch .emo-tab:hover { transform: none !important; }
-html.is-touch #dg-ov .dg-go:hover:not(:disabled) { transform: none !important; }
-html.is-touch #code-screen #cs-share:hover { transform: none !important; }
-html.is-touch .join-card a.back-link.back-pill:hover, html.is-touch .login-card a.back-link.back-pill:hover { transform: none !important; }
-html.is-touch .dg-cfa button:hover, html.is-touch .dg-cfa button:focus-visible { transform: none !important; }
-</style>
-<script>(function(){var h=document.documentElement;addEventListener('touchstart',function(){h.classList.add('is-touch')},{passive:true,capture:true});addEventListener('pointermove',function(e){if(e.pointerType==='mouse')h.classList.remove('is-touch')},{passive:true,capture:true});})();</script>
-<style>/* tap feedback on touch screens: the touched button swells a little and holds for a moment so the touch is clearly seen */
-html.is-touch .tapping, html.is-touch .tapping:hover { transition: transform .22s cubic-bezier(.2,.9,.3,1.2) .06s !important; }
-html.is-touch body .tap-s.tap-s.tap-s.tap-s, html.is-touch body .tap-s.tap-s.tap-s.tap-s:hover { transform: scale(1.3) !important; position: relative; z-index: 5; }
-html.is-touch body .tap-l.tap-l.tap-l.tap-l, html.is-touch body .tap-l.tap-l.tap-l.tap-l:hover { transform: scale(1.04) !important; }
-</style>
-<script>(function () {
-  var SEL = 'button, .btn, .tab, .s-btn, .emo-tab, .me-score, .code-chip, #mode-pill, [role="button"], .dg-ib, .dg-li, .dg-item';
-  var timers = new WeakMap();
-  document.addEventListener('touchstart', function (e) {
-    if (e.touches.length !== 1) return;
-    var el = e.target.closest && e.target.closest(SEL); if (!el || el.disabled) return;
-    clearTimeout(timers.get(el));
-    var big = el.getBoundingClientRect().width > 110 || el.getBoundingClientRect().height > 60;
-    el.classList.add('tapping', big ? 'tap-l' : 'tap-s');
-    var done = function () {
-      el.removeEventListener('touchend', done); el.removeEventListener('touchcancel', done);
-      timers.set(el, setTimeout(function () { el.classList.remove('tap-s', 'tap-l'); setTimeout(function () { el.classList.remove('tapping'); }, 300); }, 260));
-    };
-    el.addEventListener('touchend', done); el.addEventListener('touchcancel', done);
-  }, { passive: true, capture: true });
-})();</script>
 <style>/* paused: blur everything, the left toolbar included */
 #pause-ov { z-index: 8500 !important; }
+</style>
+<style>/* paused: real blur on the page itself (backdrop-filter alone does not blur on iPad Safari) */
+html.is-paused body > *:not(#pause-ov):not(script):not(style):not(link):not(meta) { -webkit-filter: blur(10px); filter: blur(10px); }
+#pause-ov { z-index: 9700 !important; }   /* above the diagnostic screen, its menu and the hand-in box */
 </style>
 </body>
 </html>
