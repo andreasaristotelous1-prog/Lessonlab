@@ -2044,7 +2044,9 @@ window.PV = function (o) {
             } catch (_) { return { mine: null, res: null }; }
           }
           const scoreCache = {};
+          let runPushed = false;
           async function showList() {
+            if (runPushed) { runPushed = false; try { history.back(); } catch (_) {} }   // drop the history step added when a single diagnostic was opened
             mode = 'list'; ov.classList.remove('ans');
             const runs = closedRuns();
             const fetchAll = () => Promise.all(runs.map(async (r) => { const { mine: m, res: rs } = r.hist ? await myResult(r.id) : { mine, res }; return rs ? `${rs.s} / ${rs.t}` : m ? 'Handed in' : 'Not handed in'; }));
@@ -2065,6 +2067,7 @@ window.PV = function (o) {
             if (!r) return;
             const { mine: m, res: rs } = r.hist ? await myResult(r.id) : { mine, res };
             mode = 'run'; ov.classList.remove('ans'); ov.classList.add('on');
+            if (!runPushed) { try { history.pushState({ dgRun: 1 }, ''); runPushed = true; } catch (_) {} }   // so the browser's back swipe / button returns to the list
             const ans = m ? arr(m.a) : [];
             let h = `<div class="dg-label">${SVG_DONE} Completed</div>${backX}<h2>${esc(r.title)}</h2>`;
             if (!m) h += '<p class="dg-hint">You did not hand in this diagnostic.</p>';
@@ -2074,6 +2077,10 @@ window.PV = function (o) {
             document.getElementById('dg-hide').onclick = () => showList();
             ov.scrollTop = 0; card.scrollTop = 0;
           }
+          window.addEventListener('popstate', () => { if (runPushed) { runPushed = false; if (mode === 'run') showList(); } });
+          { let sx = 0, sy = 0, st = 0;   // swipe right inside a single completed diagnostic = Back
+            ov.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
+            ov.addEventListener('touchend', (e) => { if (mode !== 'run') return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; if (dx > 80 && Math.abs(dy) < 60 && dx > Math.abs(dy) * 2 && Date.now() - st < 800) showList(); }, { passive: true }); }
           fab.addEventListener('click', () => { if (popEl) popClose(); else popOpen(); });
           onValue(ref(db, `${base}/diagHist`), (sn) => { histS = sn.val() || {}; render(); });
 
