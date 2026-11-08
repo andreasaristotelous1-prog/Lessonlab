@@ -2668,6 +2668,7 @@ window.LB = (function () {
 
   return {
     reset() { revealed.clear(); },
+    count(cv) { try { return analyse(cv).length; } catch (_) { return 1; } },   // how many red answer blocks a drawn page holds
     /* call right after a page has been drawn onto cv */
     process(cv, page) {
       states.delete(cv);
@@ -4258,6 +4259,33 @@ window.PV = function (o) {
           displayName = images[0].name + (images.length > 1 ? ` +${images.length - 1} more` : '');
         }
       } catch (err) { return alert(err.message); }
+
+      // converting a labbook: pages with no red answer text are left out of the booklet
+      if (labbook && !window.__reuseName && window.PDFLib) {
+        const titleEl = document.getElementById('doc-title'), prevT = titleEl.textContent;
+        try {
+          const src = await pdfjsLib.getDocument({ data: bytes.slice() }).promise, keep = [];
+          for (let i = 1; i <= src.numPages; i++) {
+            titleEl.textContent = `Checking page ${i} of ${src.numPages} for answers…`;
+            const pg = await src.getPage(i), v0 = pg.getViewport({ scale: 1 }), sc = Math.min(2, 1100 / v0.width), v = pg.getViewport({ scale: sc });
+            const c = document.createElement('canvas'); c.width = Math.ceil(v.width); c.height = Math.ceil(v.height);
+            const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+            await pg.render({ canvasContext: cx, viewport: v }).promise;
+            if (LB.count(c) > 0) keep.push(i - 1);
+            c.width = c.height = 1;
+          }
+          console.info('labbook: pages with answers', keep.map((k) => k + 1).join(','), 'of', src.numPages);
+          if (keep.length && keep.length < src.numPages) {
+            titleEl.textContent = 'Removing pages without answers…';
+            const from = await PDFLib.PDFDocument.load(bytes), out = await PDFLib.PDFDocument.create();
+            (await out.copyPages(from, keep)).forEach((pgx) => out.addPage(pgx));
+            bytes = await out.save();
+            const gone = src.numPages - keep.length;
+            setTimeout(() => alert(`Converted. ${gone} page${gone === 1 ? '' : 's'} with no answers ${gone === 1 ? 'was' : 'were'} removed (${keep.length} kept).`), 300);
+          } else if (!keep.length) setTimeout(() => alert('No red answer text was found, so every page was kept.'), 300);
+        } catch (err) { console.warn('labbook page filter', err); }
+        titleEl.textContent = prevT;
+      }
 
       const base64String = toBase64(bytes);
       if (base64String.length > MAX_BASE64) {
@@ -6136,16 +6164,6 @@ further farther far distant distance`;
       dSyncLive();
     });
     dModal.addEventListener('click', (e) => { if ((dPop || dMenu) && dView === 'results' && !e.target.closest('.dg-menuwrap')) { dPop = ''; dMenu = false; renderDiag(); } }, true);   // a click anywhere else (table, title, margins) closes an open popout
-    /* swipe in from the left edge of the screen = Back, from inside a diagnostic (results or edit) */
-    (function () {
-      let sx = 0, sy = 0, on = false;
-      dModal.addEventListener('touchstart', (e) => { const t = e.touches[0]; on = e.touches.length === 1 && t.clientX <= 36 && dView !== 'home' && !dModal.hidden; sx = t.clientX; sy = t.clientY; }, { passive: true });
-      dModal.addEventListener('touchend', (e) => {
-        if (!on) return; on = false; const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
-        if (dx > 70 && dx > dy * 1.6 && dView !== 'home') { dExitArch(); dAutoSave(); dPop = ''; dMenu = false; dView = 'home'; dEdit = null; dMsg = ''; renderDiag(); }
-      }, { passive: true });
-      dModal.addEventListener('touchcancel', () => { on = false; }, { passive: true });
-    })();
     dModal.addEventListener('mousedown', (e) => { if (e.target === dModal && dView !== 'edit') dClose(); });
     document.getElementById('diag-btn').addEventListener('click', async () => {
       dExitArch(); dView = 'home'; dHomeTab = 'live'; dEdit = null; dPop = ''; dMsg = '';
@@ -7211,5 +7229,36 @@ document.getElementById('empty-files')?.addEventListener('click', (e) => {
 .dg-pdfroot .dg-l, .dg-pdfroot .dg-l[class], .dg-pdfroot .dg-kp, .dg-pdfroot .dg-kp[class], .dg-pdfroot .dg-ks, .dg-pdfroot .dg-ks[class] { border-left-width: 1px !important; }
 @media print { .dg-l[class], .dg-kp[class], .dg-ks[class] { border-left-width: 1px !important; } }
 </style>
+<script>/* stop Safari's swipe-back / swipe-forward from leaving the page */
+(function () {
+  try { history.pushState({ ll: 1 }, ''); window.addEventListener('popstate', function () { history.pushState({ ll: 1 }, ''); }); } catch (_) {}
+  document.addEventListener('touchstart', function (e) { if (e.touches.length !== 1) return; var x = e.touches[0].clientX; if (x <= 16 || x >= window.innerWidth - 16) e.preventDefault(); }, { passive: false });
+})();
+</script>
+<style>html, body { overscroll-behavior-x: none; }</style>
+<style>/* the class-code pill comes back the moment the diagnostics window starts closing, not after its fade */
+body:has(.modal.closing):not(.so-open):not(:has(.modal:not([hidden]):not(.closing))) #link-pill { visibility: visible !important; }
+</style>
+<style>/* touch screens: stop icons staying zoomed after a tap (class is set on the first touch, cleared when a mouse or trackpad moves) */
+html.is-touch .code-pill:hover { transform: none !important; }
+html.is-touch .btn:hover { transform: none !important; }
+html.is-touch .reward-btn:hover { transform: none !important; }
+html.is-touch .del-btn:hover { transform: none !important; }
+html.is-touch .dg-kr.clk .dg-tk:hover { transform: none !important; }
+html.is-touch .workspace > .tabs .btn:hover, html.is-touch .workspace > .tabs .tab:hover { transform: none !important; }
+html.is-touch .empty-state .big.empty-files:hover { transform: none !important; }
+html.is-touch .xclose:hover { transform: none !important; }
+html.is-touch #stu-ov .so-act:hover { transform: none !important; }
+html.is-touch #diag-modal .dg-ib:hover .ic { transform: none !important; }
+html.is-touch .join-card a.back-link.back-pill:hover, html.is-touch .login-card a.back-link.back-pill:hover { transform: none !important; }
+html.is-touch #diag-modal .dg-item.go:hover, html.is-touch #diag-modal .dg-item.go:focus-visible { transform: none !important; }
+html.is-touch #diag-modal .dg-item button:hover { transform: none !important; }
+html.is-touch .dg-ask .dg-askgo:hover { transform: none !important; }
+html.is-touch #diag-modal .dg-item button[data-d="dup"]:hover, html.is-touch #diag-modal .dg-item button[data-d="del"]:hover { transform: none !important; }
+html.is-touch #diag-modal .dg-item button[data-d="dup"]:hover .ic, html.is-touch #diag-modal .dg-item button[data-d="del"]:hover .ic { transform: none !important; }
+html.is-touch #diag-modal .dg-item button:hover .ic { transform: none !important; }
+html.is-touch .dg-xq:hover .ic { transform: none !important; }
+</style>
+<script>(function(){var h=document.documentElement;addEventListener('touchstart',function(){h.classList.add('is-touch')},{passive:true,capture:true});addEventListener('pointermove',function(e){if(e.pointerType==='mouse')h.classList.remove('is-touch')},{passive:true,capture:true});})();</script>
 </body>
 </html>

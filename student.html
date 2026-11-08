@@ -1711,6 +1711,15 @@ window.PV = function (o) {
 
     class UserError extends Error {}
 
+    // Sign out: tell the teacher this student has gone, forget the auto-join and go back to the start screen
+    window.llSignOut = async function () {
+      if (ended) return;
+      const ok = window.dgConfirm ? await window.dgConfirm('Sign out?', 'You will leave this class and can rejoin with the code.', 'Sign out', 'Stay') : true;
+      if (!ok) return;
+      try { if (studentRef) await update(studentRef, { status: 'offline' }); } catch (_) {}
+      endSession('Signed out', 'You have left the class. Press the button to sign in again.');
+    };
+
     // Same set the teacher page uses to colour each pill
     const EMOJIS = ['🦊','🐼','🐸','🦄','🐙','🦁','🐯','🐨','🐵','🐧','🦉','🐢','🦖','🐳','🦋','🐝','🐞','🦀','🐬','🦒','🐘','🦓','🐰','🐻','🐷','🐮','🐔','🦆','🦜','🐠','🦈','🐊','🦔','🦦','🦥','🐲','👽','🤖','👾','🎃','⚡','🔥','🌈','🍕','🍩','🍉','🍓','🚀','🛸','⚽','🏀','🎸','🎨','🧁','🍔','🌮','🪐','🌵','🍄','💎'];
     window.EMOJIS = EMOJIS;
@@ -1902,6 +1911,7 @@ window.PV = function (o) {
           const fabTimer = () => { if (!(state0 === 'answer' && hasTimer())) return ''; const t = leftText(); return ic('doc') + `<span class="dg-ft${t.length > 5 ? ' long' : ''}${paused() ? ' paused' : ''}">${t}</span>`; };   // keeps the diagnostic icon, with the time under it (same size as the booklet timer)
           let state0 = '';
           const leftText = () => { const t = Math.max(0, Math.ceil((paused() ? active.pausedLeft : active.ends - snow()) / 1000)), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0'); };
+          window.dgConfirm = dgConfirm;
           function dgConfirm(title, text, yes, no) {
             return new Promise((res) => {
               const bd = document.createElement('div'); bd.className = 'dg-cf';
@@ -2344,6 +2354,9 @@ window.PV = function (o) {
   /* diagnostic + timer */
   rail.appendChild($('#dg-fab'));
   rail.appendChild($('#timer-pill'));
+  /* sign out */
+  sep();
+  { const so = mkBtn('s-signout', 'Sign out'); so.id = 'signout'; so.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h3.5A1.5 1.5 0 0 1 19 6v12a1.5 1.5 0 0 1-1.5 1.5H14M10 8l-4 4 4 4M6 12h9.5"/></svg>'; rail.appendChild(so); so.addEventListener('click', () => { try { window.llSignOut(); } catch (e) { console.error(e); } }); }
 })();
 </script>
 <script>
@@ -2380,7 +2393,8 @@ window.PV = function (o) {
   if (!(eb && score && code && pg && fab)) return;
   const s1 = seps[0], s2 = document.createElement('div'); s2.className = 's-sep dg-sep';
   code.title = 'Show the class code';
-  [eb, score, code, s1, pg, tm, s2, fab].forEach((n) => { if (n) rail.appendChild(n); });
+  const so = q('#signout'), s3 = document.createElement('div'); s3.className = 's-sep';
+  [eb, score, code, s1, pg, tm, s2, fab, s3, so].forEach((n) => { if (n) rail.appendChild(n); });
   seps.forEach((s, i) => { if (i > 0) s.remove(); });
 })();
 </script>
@@ -2612,5 +2626,19 @@ window.PV = function (o) {
 })();
 </script>
 <style>html, body { overscroll-behavior-x: none; }</style>
+<style>/* touch screens: stop icons staying zoomed after a tap (class is set on the first touch, cleared when a mouse or trackpad moves) */
+html.is-touch .dg-kr.clk .dg-tk:hover { transform: none !important; }
+html.is-touch .s-rail .s-btn:hover, html.is-touch .s-rail #mode-pill:hover, html.is-touch .s-rail #dg-fab:hover, html.is-touch .s-rail .code-chip:hover, html.is-touch .s-rail .me-score:hover { transform: none !important; }
+html.is-touch .emo-grid button:hover { transform: none !important; }
+html.is-touch #ended button:hover { transform: none !important; }
+html.is-touch .join-card #start-btn:hover:not(:disabled) { transform: none !important; }
+html.is-touch .xclose:hover { transform: none !important; }
+html.is-touch .emo-tab:hover { transform: none !important; }
+html.is-touch #dg-ov .dg-go:hover:not(:disabled) { transform: none !important; }
+html.is-touch #code-screen #cs-share:hover { transform: none !important; }
+html.is-touch .join-card a.back-link.back-pill:hover, html.is-touch .login-card a.back-link.back-pill:hover { transform: none !important; }
+html.is-touch .dg-cfa button:hover, html.is-touch .dg-cfa button:focus-visible { transform: none !important; }
+</style>
+<script>(function(){var h=document.documentElement;addEventListener('touchstart',function(){h.classList.add('is-touch')},{passive:true,capture:true});addEventListener('pointermove',function(e){if(e.pointerType==='mouse')h.classList.remove('is-touch')},{passive:true,capture:true});})();</script>
 </body>
 </html>
