@@ -9,7 +9,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lessonlab Student</title>
   <link rel="manifest" href="manifest-student.webmanifest">
-  <meta name="theme-color" content="#c9b8f6">
+  <meta name="theme-color" content="#e4def5">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Lessonlab Student">
@@ -1107,6 +1107,8 @@ html, body { touch-action: pan-x pan-y; }
 .emo-dots i.on { width: 16px; border-radius: 3px; background: #6f5bc9; }
 @keyframes emoL { from { transform: translateX(34px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes emoR { from { transform: translateX(-34px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* swiping between emoji pages: nothing may slide outside the pop-out's edge */
+.s-pop:has(.emo-tabs), .rail-pop:has(.emo-tabs) { overflow: hidden !important; }
 .emo-grid.sl { animation: emoL .22s ease-out; } .emo-grid.sr { animation: emoR .22s ease-out; }
 .emo-grid { touch-action: pan-y; }
 .emo-tab svg { flex: none !important; }
@@ -1284,13 +1286,16 @@ window.LB = (function () {
   return {
     reset() { revealed.clear(); boxCache.clear(); },
     /* call right after a page has been drawn onto cv */
-    process(cv, page) {
+    process(cv, page, gen) {
       states.delete(cv);
       if (!window.__labbook || !cv.width || cv.width < 20) return;
       try {
         const clean = document.createElement('canvas'); clean.width = cv.width; clean.height = cv.height;
         clean.getContext('2d').drawImage(cv, 0, 0);
-        let boxes = boxCache.get(page); if (!boxes) { boxes = analyse(cv); boxCache.set(page, boxes); }
+        const ck = gen + ':' + page; let hit = boxCache.get(ck);
+        /* keep the boxes steady while zooming, but redo them if the first look was at a small size (analysis reads up to 1100 px wide) */
+        if (!hit || (hit.w < 1000 && cv.width > hit.w * 1.2)) { hit = { boxes: analyse(cv), w: cv.width }; boxCache.set(ck, hit); }
+        const boxes = hit.boxes;
         const ctx = cv.getContext('2d');
         states.set(cv, { page, clean, boxes });
         boxes.forEach((b) => { if (!isRev(page, b)) blurBox(ctx, clean, b, cv.width, cv.height); });
@@ -1361,7 +1366,7 @@ window.PV = function (o) {
       await page.render({ canvasContext: off.getContext('2d'), viewport: vp }).promise;
       if (gen !== S.gen || S.token.get(i) !== tok) return;
       cv.width = off.width; cv.height = off.height; cv.getContext('2d').drawImage(off, 0, 0);
-      o.afterRender && o.afterRender(cv, i + 1);
+      o.afterRender && o.afterRender(cv, i + 1, gen);
     }).catch(() => { cv.dataset.k = ''; });
   }
   function evict(i) { const cv = S.els[i].firstChild; if (cv.dataset.k) { S.token.set(i, (S.token.get(i) || 0) + 1); cv.dataset.k = ''; cv.width = 1; cv.height = 1; } }
@@ -1636,7 +1641,7 @@ window.PV = function (o) {
       area: scrollArea, host: pvHost, gap: 12, minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, maxPixels: MAX_PIXELS, dprCap: 3,
       onPage: (n) => { if (isSoloWork) { currentPage = n; updatePageUI(n); } },
       onZoom: (z) => { zoom = z; zoomDisplay.textContent = `${Math.round(z * 100)}%`; },
-      afterRender: (cv, n) => LB.process(cv, n)
+      afterRender: (cv, n, g) => { document.body.classList.remove('ll-loading'); LB.process(cv, n, g); }
     });
     // Teacher leading: the class sees the teacher's page only. Solo work: the whole booklet scrolls.
     function applyMode() {
@@ -1710,6 +1715,7 @@ window.PV = function (o) {
     function loadBase64PDF(base64Data) {
       const seq = ++loadSeq;
       waitingMsg.style.display = ''; if (!pdfDoc) waitingMsg.textContent = 'Loading booklet…';
+      document.body.classList.add('ll-loading'); setTimeout(() => document.body.classList.remove('ll-loading'), 20000);
       try {
         LB.reset();
         const raw = atob(base64Data);
@@ -2582,7 +2588,8 @@ window.PV = function (o) {
     close();
     const ov = document.createElement('div'); ov.className = 'me-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'How marking works');
     ov.innerHTML = '<div class="me-card"><iframe class="me-frame" title="How marking works" sandbox=""></iframe></div>';
-    ov.querySelector('iframe').srcdoc = DOC;
+    const dark = document.documentElement.getAttribute('data-ll') === 'dark';
+    ov.querySelector('iframe').srcdoc = dark ? DOC + '<style>.sl,.sr2{fill:#0a0a0f!important}.lt{--tile:#3d3d46;--tile-line:rgba(255,255,255,.14);--ib:rgba(255,255,255,.16);--fg:#fff;--muted:#fff;--ink:#e9e6ff;--out:#2f5a43;--warn:#6a5a22;--bad:#6a3038}.lt .t,.lt .s{fill:#fff!important}.lt .hd{fill:#5b5088}.lt .dv{stroke:#fff!important;stroke-opacity:.35!important}.ttl{fill:#fff}</style>' : DOC;
     ov.addEventListener('click', (e) => { if (!e.target.closest('.me-card')) close(); });
     document.body.appendChild(ov);
     document.addEventListener('keydown', onKey, true);
@@ -2673,6 +2680,10 @@ html.is-paused body > *:not(#pause-ov):not(script):not(style):not(link):not(meta
 /* Dark mode: the whole page is inverted (hue kept), then pictures, booklet pages, logo, emoji and the marking-engine window are turned back so they look normal */
 html[data-ll="dark"] { filter: invert(.92) hue-rotate(180deg); background: #fff; }
 html[data-ll="dark"] canvas, html[data-ll="dark"] img, html[data-ll="dark"] video, html[data-ll="dark"] svg.lle, html[data-ll="dark"] .logo, html[data-ll="dark"] .emoji svg, html[data-ll="dark"] .me-card { filter: invert(1) hue-rotate(180deg) contrast(1.19); }
+/* booklet pages in dark mode: dim the white point (raise --ll-dim for dimmer pages, 0 for none) */
+html[data-ll="dark"] { --ll-dim: .4; }
+html[data-ll="dark"] .pv-page { background: #fff !important; }
+html[data-ll="dark"] .pv-page canvas { opacity: calc(1 - var(--ll-dim)); }
 /* pop-outs: a plain dark panel (the blurred-glass backdrop turns silver when the page is inverted) */
 html[data-ll="dark"] .rail-pop, html[data-ll="dark"] .s-pop { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: rgba(247,245,255,.97) !important; }
 /* page and timer pop-outs: white text in dark mode */
@@ -2752,5 +2763,25 @@ html:has(#join:not([style*="none"])), html:has(#join:not([style*="none"])) body 
   document.addEventListener('wheel', (e) => { if (active()) e.preventDefault(); }, opt);
 })();
 </script>
+<style>
+/* full-screen pop-outs (students, class code): the page behind is always dimmed */
+#stu-ov { background: rgba(50,40,110,.5) !important; }
+#code-screen { background: rgba(50,40,110,.5) !important; }
+html[data-ll="dark"] #stu-ov, html[data-ll="dark"] #code-screen { background: rgba(225,220,245,.82) !important; }
+</style>
+<style>
+/* class-code screen: nothing shows through behind the card */
+#code-screen { background: #efeef6 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+html[data-ll="dark"] #code-screen { background: #e3e0f2 !important; }
+</style>
+<style>
+/* diagnostics: full screen */
+#dg-ov { padding: 0 !important; }
+#dg-ov .dg-card { max-width: none !important; width: 100% !important; min-height: 100vh; box-sizing: border-box; border-radius: 0 !important; border: 0 !important; box-shadow: none !important; padding: 28px max(20px, calc((100vw - 760px) / 2)) 48px !important; }
+/* booklet loading: the pdf area stays dim until the first page is drawn (same as the teacher page) */
+.canvas-scroll-area { transition: opacity .2s ease; }
+body.ll-loading .canvas-scroll-area { opacity: .3; }
+html[data-ll="dark"] body.ll-loading .canvas-scroll-area { opacity: .22; filter: brightness(.6); }
+</style>
 </body>
 </html>

@@ -9,7 +9,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lessonlab Teacher</title>
   <link rel="manifest" href="manifest-teacher.webmanifest">
-  <meta name="theme-color" content="#c9b8f6">
+  <meta name="theme-color" content="#e4def5">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Lessonlab Teacher">
@@ -2651,7 +2651,7 @@ window.LB = (function () {
     out.hasDiagram = false; return out;
   }
   window.__lbSimple = false;
-  function analyse(cv) {
+  function analyseFull(cv) {
     if (window.__lbSimple) return analyseSimple(cv);
     const aw = Math.min(cv.width, 1100), ah = Math.max(1, Math.round(cv.height * aw / cv.width));
     const s = document.createElement('canvas'); s.width = aw; s.height = ah;
@@ -2678,7 +2678,7 @@ window.LB = (function () {
       const cw = ax1 - ax0 + 1, ch = ay1 - ay0 + 1, solid = a0 / (cw * ch);
       if (cw >= 24 && ch <= 28 && cw >= ch * 2.5 && (solid >= .32 || ch <= 4)) {
         pts.forEach((q) => { mask[q] = 0; });
-        diagram.push({ x: Math.max(0, ax0 - 2) / aw, y: Math.max(0, ay0 - 2) / ah, w: Math.min(aw, cw + 4) / aw, h: Math.min(ah, ch + 4) / ah });
+        diagram.push({ x: Math.max(0, ax0 - 2) / aw, y: Math.max(0, ay0 - 2) / ah, w: Math.min(aw, cw + 4) / aw, h: Math.min(ah, ch + 4) / ah, rule: ch <= 4 });
       }
     }
     for (let y = 0; y < ah; y++) for (let x = 0; x < aw; x++) if (mask[y * aw + x]) { const k = ((y / c) | 0) * gw + ((x / c) | 0); if (cnt[k] < 255) cnt[k]++; }
@@ -2703,7 +2703,7 @@ window.LB = (function () {
       const ratio = px / (bw * bh), area = (bw * bh) / (aw * ah), pad = 2;
       const box = { x: Math.max(0, x0 * c - pad) / aw, y: Math.max(0, y0 * c - pad) / ah, w: Math.min(aw, bw + 2 * pad) / aw, h: Math.min(ah, bh + 2 * pad) / ah };
       // red parts of a diagram (solid shapes, sparse line drawings, tall narrow marks) are not answers
-      let isText = !(ratio > .5 || (area > .012 && ratio < .07) || (bh > 40 && bw < bh * 1.2));
+      let isText = !((ratio > .5 && bh >= 22) || (area > .012 && ratio < .07) || (bh > 40 && bw < bh * 1.2));
       if (isText) {
         // text is made of many separate letter-sized pieces; lines, arrows, dashes and outlines are a few big pieces or many tiny ones
         const bx0 = x0 * c, by0 = y0 * c, bx1 = Math.min(aw, (x1 + 1) * c), by1 = Math.min(ah, (y1 + 1) * c), hs = [];
@@ -2728,9 +2728,45 @@ window.LB = (function () {
     }
     // a red label touching or sitting right beside a red diagram is part of that diagram, not an answer
     const mx = 26 / aw, my = 26 / ah;
-    const res = out.filter((b) => !diagram.some((d) => b.x < d.x + d.w + mx && b.x + b.w > d.x - mx && b.y < d.y + d.h + my && b.y + b.h > d.y - my));
+    const res = out.filter((b) => !diagram.some((d) => !d.rule && b.x < d.x + d.w + mx && b.x + b.w > d.x - mx && b.y < d.y + d.h + my && b.y + b.h > d.y - my));
     res.hasDiagram = diagram.length > 0;
     return res;
+  }
+
+  /* the cover boxes use the same, simple finder as the student page: every red line of text is covered */
+  function analyse(cv) {
+    if (window.__lbSimple) return analyseSimple(cv);
+    const aw = Math.min(cv.width, 1100), ah = Math.max(1, Math.round(cv.height * aw / cv.width));
+    const s = document.createElement('canvas'); s.width = aw; s.height = ah;
+    const sc = s.getContext('2d', { willReadFrequently: true }); sc.drawImage(cv, 0, 0, aw, ah);
+    const d = sc.getImageData(0, 0, aw, ah).data;
+    const c = 4, gw = Math.ceil(aw / c), gh = Math.ceil(ah / c), cnt = new Uint8Array(gw * gh);
+    for (let y = 0; y < ah; y++) for (let x = 0; x < aw; x++) {
+      const i = (y * aw + x) * 4, r = d[i], g = d[i + 1], b = d[i + 2];
+      if (r > 120 && r - g > 60 && r - b > 50 && g < 170) { const k = ((y / c) | 0) * gw + ((x / c) | 0); if (cnt[k] < 255) cnt[k]++; }
+    }
+    const g0 = new Uint8Array(gw * gh); for (let k = 0; k < g0.length; k++) g0[k] = cnt[k] >= 2 ? 1 : 0;
+    const g1 = new Uint8Array(gw * gh);                      // join letters and words: spread 3 cells sideways, 1 up/down
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) if (g0[y * gw + x])
+      for (let dx = -4; dx <= 4; dx++) { const yy = y, xx = x + dx; if (yy >= 0 && yy < gh && xx >= 0 && xx < gw) g1[yy * gw + xx] = 1; }
+    const seen = new Uint8Array(gw * gh), out = [];
+    for (let k0 = 0; k0 < g1.length; k0++) {
+      if (!g1[k0] || seen[k0]) continue;
+      const stack = [k0]; seen[k0] = 1; let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1, n = 0;
+      while (stack.length) {
+        const k = stack.pop(), y = (k / gw) | 0, x = k - y * gw;
+        if (g0[k]) { n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        if (x > 0 && g1[k - 1] && !seen[k - 1]) { seen[k - 1] = 1; stack.push(k - 1); }
+        if (x < gw - 1 && g1[k + 1] && !seen[k + 1]) { seen[k + 1] = 1; stack.push(k + 1); }
+        if (y > 0 && g1[k - gw] && !seen[k - gw]) { seen[k - gw] = 1; stack.push(k - gw); }
+        if (y < gh - 1 && g1[k + gw] && !seen[k + gw]) { seen[k + gw] = 1; stack.push(k + gw); }
+      }
+      const bw = (x1 - x0 + 1) * c, bh = (y1 - y0 + 1) * c;
+      if (n < 3 || bh < 7 || bw < 10 || (bw * bh) / (aw * ah) > .3) continue;     // specks, thin rules and big red areas are not text
+      const pad = 2;
+      out.push({ x: Math.max(0, x0 * c - pad) / aw, y: Math.max(0, y0 * c - pad) / ah, w: Math.min(aw, bw + 2 * pad) / aw, h: Math.min(ah, bh + 2 * pad) / ah });
+    }
+    return out;
   }
 
   /* a tidy pastel block that covers the red line; t runs 0 (solid) to 1 (gone) for the pop-away */
@@ -2749,21 +2785,24 @@ window.LB = (function () {
   return {
     reset() { revealed.clear(); boxCache.clear(); },
     boxes(cv) { try { const b = analyse(cv); return { boxes: b.slice(), hasDiagram: !!b.hasDiagram }; } catch (_) { return { boxes: [], hasDiagram: false }; } },
-    count(cv) { try { return analyse(cv).length; } catch (_) { return 1; } },
+    count(cv) { try { return analyseFull(cv).length; } catch (_) { return 1; } },
     /* does this drawn page hold real answer lines? many red blocks, one long red line, or a few answers with no diagram on the page */
     answerPage(cv) { try {
-      const b = analyse(cv), sw = b.reduce((t, x) => t + x.w, 0);
+      const b = analyseFull(cv), sw = b.reduce((t, x) => t + x.w, 0);
       // tuned on 12 real booklets: answer pages had 7+ red blocks, other pages never more than 4, so many blocks means answers even beside a diagram
       return b.length >= 5 || sw >= .5 || b.some((x) => x.w >= .2) || (!b.hasDiagram && b.length >= 3 && sw >= .12);
     } catch (_) { return true; } },   // how many red answer blocks a drawn page holds
     /* call right after a page has been drawn onto cv */
-    process(cv, page) {
+    process(cv, page, gen) {
       states.delete(cv);
       if (!window.__labbook || !cv.width || cv.width < 20) return;
       try {
         const clean = document.createElement('canvas'); clean.width = cv.width; clean.height = cv.height;
         clean.getContext('2d').drawImage(cv, 0, 0);
-        let boxes = boxCache.get(page); if (!boxes) { boxes = analyse(cv); boxCache.set(page, boxes); }
+        const ck = gen + ':' + page; let hit = boxCache.get(ck);
+        /* keep the boxes steady while zooming, but redo them if the first look was at a small size (analysis reads up to 1100 px wide) */
+        if (!hit || (hit.w < 1000 && cv.width > hit.w * 1.2)) { hit = { boxes: analyse(cv), w: cv.width }; boxCache.set(ck, hit); }
+        const boxes = hit.boxes;
         const ctx = cv.getContext('2d');
         states.set(cv, { page, clean, boxes });
         boxes.forEach((b) => { if (!isRev(page, b)) blurBox(ctx, clean, b, cv.width, cv.height); });
@@ -2834,7 +2873,7 @@ window.PV = function (o) {
       await page.render({ canvasContext: off.getContext('2d'), viewport: vp }).promise;
       if (gen !== S.gen || S.token.get(i) !== tok) return;
       cv.width = off.width; cv.height = off.height; cv.getContext('2d').drawImage(off, 0, 0);
-      o.afterRender && o.afterRender(cv, i + 1);
+      o.afterRender && o.afterRender(cv, i + 1, gen);
     }).catch(() => { cv.dataset.k = ''; });
   }
   function evict(i) { const cv = S.els[i].firstChild; if (cv.dataset.k) { S.token.set(i, (S.token.get(i) || 0) + 1); cv.dataset.k = ''; cv.width = 1; cv.height = 1; } }
@@ -4118,7 +4157,7 @@ window.PV = function (o) {
         clearTimeout(bcTimer); bcTimer = setTimeout(() => { if (classCode) set(cp('session/currentPage'), pageNum).catch(() => {}); }, 200);
       },
       onZoom: (z) => { zoom = z; updateZoomLabel(); clearTimeout(window.__zt); window.__zt = setTimeout(pushView, 300); },
-      afterRender: (cv, n) => LB.process(cv, n)
+      afterRender: (cv, n, g) => { window.__firstPaint = true; LB.process(cv, n, g); }
     });
 
     window.goToPage = function (n) {
@@ -4558,7 +4597,7 @@ window.PV = function (o) {
       return btoa(bin);
     }
 
-    document.getElementById('pdf-upload').addEventListener('change', async function (e) {
+    const llUpload = async function (e) {
       const files = [...e.target.files];
       e.target.value = '';
       if (!files.length) return;
@@ -4672,6 +4711,18 @@ window.PV = function (o) {
       } catch (err) {
         alert('Error broadcasting the booklet: ' + err.message);
       }
+    };
+    /* the booklet area stays dimmed for the whole upload, whatever way it ends */
+    document.getElementById('pdf-upload').addEventListener('change', async function (e) {
+      document.body.classList.add('ll-loading'); window.__firstPaint = false;
+      try {
+        await llUpload.call(this, e);
+        /* keep it dim until the new booklet's first page has been drawn and its boxes are on */
+        for (let i = 0; i < 200 && !window.__firstPaint; i++) await new Promise((r) => setTimeout(r, 100));
+        /* ...and until any "converted" notice has been dismissed */
+        await new Promise((r) => setTimeout(r, 350));
+        for (let i = 0; i < 6000 && document.querySelector('.ll-note'); i++) await new Promise((r) => setTimeout(r, 100));
+      } finally { document.body.classList.remove('ll-loading'); }
     });
 
     // Teacher / Solo toggle
@@ -7643,7 +7694,8 @@ document.getElementById('empty-files')?.addEventListener('click', (e) => {
     close();
     const ov = document.createElement('div'); ov.className = 'me-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'How marking works');
     ov.innerHTML = '<div class="me-card"><iframe class="me-frame" title="How marking works" sandbox=""></iframe></div>';
-    ov.querySelector('iframe').srcdoc = DOC;
+    const dark = document.documentElement.getAttribute('data-ll') === 'dark';
+    ov.querySelector('iframe').srcdoc = dark ? DOC + '<style>.sl,.sr2{fill:#0a0a0f!important}.lt{--tile:#3d3d46;--tile-line:rgba(255,255,255,.14);--ib:rgba(255,255,255,.16);--fg:#fff;--muted:#fff;--ink:#e9e6ff;--out:#2f5a43;--warn:#6a5a22;--bad:#6a3038}.lt .t,.lt .s{fill:#fff!important}.lt .hd{fill:#5b5088}.lt .dv{stroke:#fff!important;stroke-opacity:.35!important}.ttl{fill:#fff}</style>' : DOC;
     ov.addEventListener('click', (e) => { if (!e.target.closest('.me-card')) close(); });
     document.body.appendChild(ov);
     document.addEventListener('keydown', onKey, true);
@@ -7773,6 +7825,10 @@ body:has(.modal.closing):not(.so-open):not(:has(.modal:not([hidden]):not(.closin
 /* Dark mode: the whole page is inverted (hue kept), then pictures, booklet pages, logo, emoji and the marking-engine window are turned back so they look normal */
 html[data-ll="dark"] { filter: invert(.92) hue-rotate(180deg); background: #fff; }
 html[data-ll="dark"] canvas, html[data-ll="dark"] img, html[data-ll="dark"] video, html[data-ll="dark"] svg.lle, html[data-ll="dark"] .logo, html[data-ll="dark"] .emoji svg, html[data-ll="dark"] .me-card { filter: invert(1) hue-rotate(180deg) contrast(1.19); }
+/* booklet pages in dark mode: dim the white point (raise --ll-dim for dimmer pages, 0 for none) */
+html[data-ll="dark"] { --ll-dim: .4; }
+html[data-ll="dark"] .pv-page { background: #fff !important; }
+html[data-ll="dark"] .pv-page canvas { opacity: calc(1 - var(--ll-dim)); }
 /* pop-outs: a plain dark panel (the blurred-glass backdrop turns silver when the page is inverted) */
 html[data-ll="dark"] .rail-pop, html[data-ll="dark"] .s-pop { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: rgba(247,245,255,.97) !important; }
 /* page and timer pop-outs: white text in dark mode */
@@ -7852,5 +7908,52 @@ html:has(#login:not([hidden])), html:has(#login:not([hidden])) body { overflow: 
   document.addEventListener('wheel', (e) => { if (active()) e.preventDefault(); }, opt);
 })();
 </script>
+<style>
+/* booklet upload: the pdf area stays dim until the booklet is ready */
+#canvas-container { transition: opacity .2s ease; }
+body.ll-loading #canvas-container { opacity: .3; pointer-events: none; }
+html[data-ll="dark"] .ll-note { background: rgba(240,238,255,.62); }
+html[data-ll="dark"] body.ll-loading #canvas-container { opacity: .22; filter: brightness(.6); }
+body.ll-loading::after { content: 'Opening booklet…'; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9000; padding: 10px 18px; border-radius: 999px; background: rgba(255,255,255,.92); color: #3b2f7a; font: 700 14px Arial, 'Helvetica Neue', Helvetica, sans-serif; box-shadow: 0 8px 26px rgba(40,30,90,.2); pointer-events: none; }
+</style>
+<style>
+/* full-screen pop-outs (students, class code): the page behind is always dimmed */
+#stu-ov { background: rgba(50,40,110,.5) !important; }
+#code-screen { background: rgba(50,40,110,.5) !important; }
+html[data-ll="dark"] #stu-ov, html[data-ll="dark"] #code-screen { background: rgba(225,220,245,.82) !important; }
+</style>
+<style>
+/* Classes + Students screens: nothing shows through behind the cards */
+#no-class:not([hidden]) { position: fixed; inset: 0; z-index: 800; }
+#stu-ov { padding: 0 !important; }
+#stu-ov .so-card { border-radius: 0 !important; border: 0 !important; box-shadow: none !important; }
+#stu-ov, #no-class { background: #efeef6 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+html[data-ll="dark"] #stu-ov, html[data-ll="dark"] #no-class { background: #e3e0f2 !important; }
+</style>
+<style>
+/* diagnostics window: full screen */
+#diag-modal { padding: 0 !important; align-items: stretch !important; justify-content: stretch !important; }
+#diag-modal .diag-card, #diag-modal .diag-card.res { width: 100vw !important; max-width: none !important; height: 100vh !important; max-height: none !important; border-radius: 0 !important; box-sizing: border-box; padding-left: max(28px, 4vw); padding-right: max(28px, 4vw); overflow: auto; }
+#diag-modal textarea.dg-in { resize: none; overflow: hidden; min-height: 44px; }
+</style>
+<script>
+/* diagnostic question boxes grow to fit their text */
+(function () {
+  const m = document.getElementById('diag-modal'); if (!m) return;
+  function fit(t) { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
+  function all() { m.querySelectorAll('textarea.dg-in').forEach((t) => { if (t.offsetParent) fit(t); }); }
+  m.addEventListener('input', (e) => { if (e.target.matches && e.target.matches('textarea.dg-in')) fit(e.target); });
+  let q = 0; const sched = () => { cancelAnimationFrame(q); q = requestAnimationFrame(all); };
+  new MutationObserver(sched).observe(m, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  window.addEventListener('resize', sched);
+})();
+</script>
+<style>
+/* class windows (new / rename / co-teachers): full screen, flat background, card centred and roomier */
+#modal, #co-modal { padding: 0 !important; background: #efeef6 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; overflow: auto; }
+html[data-ll="dark"] #modal, html[data-ll="dark"] #co-modal { background: #e3e0f2 !important; }
+#modal .modal-card, #co-modal .modal-card { width: 100vw !important; max-width: none !important; height: 100vh !important; max-height: none !important; border-radius: 0 !important; box-sizing: border-box; margin: 0; padding: 32px max(28px, 4vw) 24px; overflow: auto; }
+#modal .modal-card, #co-modal .modal-card { padding: 48px max(28px, calc((100vw - 720px) / 2)) 32px !important; }
+</style>
 </body>
 </html>
