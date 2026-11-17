@@ -4,6 +4,9 @@
 <script>/* Lessonlab theme: apply before first paint */
 (function(){try{var p=localStorage.getItem('ll-theme')||'auto',d=p==='dark'||(p==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-ll',d?'dark':'light');document.documentElement.setAttribute('data-ll-pref',p);}catch(e){}})();
 </script>
+<script>/* Returning student: mark it before first paint, so the join form never flashes on screen while we silently rejoin */
+(function(){try{if(localStorage.getItem('cf_student_auto')==='1')document.documentElement.setAttribute('data-ll-rejoin','1');}catch(e){}})();
+</script>
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -15,10 +18,15 @@
   <meta name="apple-mobile-web-app-title" content="Lessonlab Student">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%2096%2096%27%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%3E%3Crect%20x%3D%274%27%20y%3D%274%27%20width%3D%2788%27%20height%3D%2788%27%20rx%3D%2722%27%20fill%3D%27%237d68d0%27%2F%3E%3Cpath%20d%3D%27M34%2026%20V68%20H66%27%20fill%3D%27none%27%20stroke%3D%27%23efebfc%27%20stroke-width%3D%2711%27%20stroke-linejoin%3D%27round%27%20stroke-linecap%3D%27round%27%20transform%3D%27translate%28-6%208%29%27%2F%3E%3Ccircle%20cx%3D%2770%27%20cy%3D%2724%27%20r%3D%276%27%20fill%3D%27%23efebfc%27%2F%3E%3Ccircle%20cx%3D%2779%27%20cy%3D%2738%27%20r%3D%274%27%20fill%3D%27%23efebfc%27%2F%3E%3Ccircle%20cx%3D%2776%27%20cy%3D%2714%27%20r%3D%273%27%20fill%3D%27%23efebfc%27%2F%3E%3C%2Fsvg%3E">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    /* deferred scripts above finish before DOMContentLoaded, so pdfjsLib is guaranteed to exist here */
+    document.addEventListener('DOMContentLoaded', function () {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    });
   </script>
   <style>
     :root {
@@ -32,6 +40,22 @@
       background: linear-gradient(135deg, #f6f1fb 0%, #eef5fb 50%, #effaf5 100%) fixed;
     }
     button, input { font-family: inherit; }
+
+    /* Returning student: before our own script even runs, CSS alone swaps the join form
+       for a plain "Rejoining…" splash, so there's no flash of the sign-in fields. */
+    #rejoin-splash { display: none; }
+    html[data-ll-rejoin="1"] #join { display: none !important; }
+    html[data-ll-rejoin="1"] #rejoin-splash {
+      display: flex !important; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; position: fixed; inset: 0; background: linear-gradient(135deg, #f6f1fb 0%, #eef5fb 50%, #effaf5 100%) fixed;
+    }
+    #rejoin-splash .logo { width: 48px; height: 48px; }
+    #rejoin-splash .rj-text { color: var(--muted); font-size: 1rem; }
+    #rejoin-splash .rj-spin {
+      width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--line); border-top-color: #7d68d0;
+      animation: rj-spin 0.8s linear infinite;
+    }
+    @keyframes rj-spin { to { transform: rotate(360deg); } }
 
     /* ---------- brand ---------- */
     .brand-wrap { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
@@ -1304,10 +1328,10 @@ window.LB = (function () {
     hit(cv, ev) {
       const st = states.get(cv); if (!window.__labbook || !st) return null;
       const r = cv.getBoundingClientRect(), fx = (ev.clientX - r.left) / r.width, fy = (ev.clientY - r.top) / r.height;
-      return st.boxes.find((b) => fx >= b.x && fx <= b.x + b.w && fy >= b.y && fy <= b.y + b.h && !isRev(st.page, b)) || null;
+      return st.boxes.find((b) => fx >= b.x && fx <= b.x + b.w && fy >= b.y && fy <= b.y + b.h) || null;
     },
     reveal(cv, b) {
-      const st = states.get(cv); if (!b || !st) return;
+      const st = states.get(cv); if (!b || !st || isRev(st.page, b)) return;
       const list = revealed.get(st.page) || []; list.push(b); revealed.set(st.page, list);
       const W = cv.width, H = cv.height, x = Math.floor(b.x * W) - 22, y = Math.floor(b.y * H) - 10, w = Math.ceil(b.w * W) + 44, h = Math.ceil(b.h * H) + 20;
       const ctx = cv.getContext('2d'), t0 = performance.now(), D = 260;
@@ -1319,9 +1343,31 @@ window.LB = (function () {
       };
       requestAnimationFrame(step);
     },
+    /* the reverse of reveal(): blur a box back in, so a student can toggle one answer off again after peeking at it */
+    hide(cv, b) {
+      const st = states.get(cv); if (!b || !st) return;
+      const list = revealed.get(st.page) || []; const idx = list.findIndex((r) => Math.abs(r.x - b.x) < .01 && Math.abs(r.y - b.y) < .01);
+      if (idx === -1) return;
+      list.splice(idx, 1); revealed.set(st.page, list);
+      const W = cv.width, H = cv.height, x = Math.floor(b.x * W) - 22, y = Math.floor(b.y * H) - 10, w = Math.ceil(b.w * W) + 44, h = Math.ceil(b.h * H) + 20;
+      const ctx = cv.getContext('2d'), t0 = performance.now(), D = 200;
+      const step = (now) => {
+        if (states.get(cv) !== st) return;
+        const t = Math.min(1, (now - t0) / D), e = Math.pow(1 - t, 3);     // mirrors reveal()'s easing, run backwards: 1 (shown) settling down to 0 (covered)
+        ctx.drawImage(st.clean, x, y, w, h, x, y, w, h);
+        blurBox(ctx, st.clean, b, W, H, e);
+        if (t < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    },
     attach(area, canReveal) {
       const cvOf = (e) => document.elementsFromPoint(e.clientX, e.clientY).find((el) => el.tagName === 'CANVAS') || null;   // (a captured pointer retargets the event, so look under the pointer)
-      area.addEventListener('click', (e) => { const cv = cvOf(e); if (!cv || !canReveal()) return; const b = this.hit(cv, e); if (b) this.reveal(cv, b); });
+      area.addEventListener('click', (e) => {
+        const cv = cvOf(e); if (!cv || !canReveal()) return;
+        const b = this.hit(cv, e); if (!b) return;
+        const st = states.get(cv);
+        if (isRev(st.page, b)) this.hide(cv, b); else this.reveal(cv, b);   // click again to toggle a peeked-at answer back off
+      });
       area.addEventListener('mousemove', (e) => { const cv = cvOf(e); if (cv) cv.style.cursor = (canReveal() && this.hit(cv, e)) ? 'pointer' : ''; });
     }
   };
@@ -1338,11 +1384,26 @@ window.PV = function (o) {
   const top = (i) => S.els[i].getBoundingClientRect().top - area.getBoundingClientRect().top;
   const shown = (i) => !S.lock || S.lock === i + 1;
 
-  function layout() {
+  function layout(liveOnly) {
+    // During a continuous pinch/wheel zoom, resizing every single page on every frame is what
+    // made it feel janky on a longer booklet — each resize can shift every page below it, so the
+    // browser was redoing that for the whole document, every frame. With liveOnly, a frame mid-gesture
+    // only resizes the pages actually on screen; the ones scrolled out of view catch up once it settles
+    // (160ms later, see setZoom) — invisible while off-screen, so there's nothing to see snap into place.
     const w = fitW() * S.zoom;
+    let vis = null;
+    if (liveOnly && S.els.length > 4) {
+      const H = area.clientHeight; vis = new Set();
+      for (let i = 0; i < S.els.length; i++) {            // read every position first, before any writes below
+        if (!shown(i)) continue;
+        const t = top(i), h = S.els[i].offsetHeight;
+        if (t < H * 1.5 && t + h > -H * .5) vis.add(i);
+      }
+    }
     S.els.forEach((el, i) => {
-      el.style.width = w + 'px'; el.style.height = Math.round(w * S.sizes[i][1] / S.sizes[i][0]) + 'px';
       el.style.display = shown(i) ? '' : 'none';
+      if (vis && !vis.has(i)) return;
+      el.style.width = w + 'px'; el.style.height = Math.round(w * S.sizes[i][1] / S.sizes[i][0]) + 'px';
     });
     area.classList.toggle('zoomed', S.zoom > 1.001);
     o.onZoom && o.onZoom(S.zoom);
@@ -1402,12 +1463,12 @@ window.PV = function (o) {
     clear() { S.gen++; S.doc = null; S.els = []; S.sizes = []; host.innerHTML = ''; S.zoom = 1; S.lock = null; layout(); },
     goTo, render, layout,
     setLock(n) { S.lock = n || null; layout(); if (S.lock) { S.cur = S.lock; area.scrollTop = 0; } render(); },
-    setZoom(z, cx, cy) {
+    setZoom(z, cx, cy, live) {
       z = Math.min(Math.max(z, o.minZoom || 1), o.maxZoom || 5); if (!S.doc || Math.abs(z - S.zoom) < .001) return;
       const r = area.getBoundingClientRect(), ax = (cx == null ? r.left + r.width / 2 : cx) - r.left, ay = (cy == null ? r.top + r.height / 2 : cy) - r.top;
       const k = z / S.zoom, px = area.scrollLeft + ax, py = area.scrollTop + ay;
-      S.zoom = z; layout(); area.scrollLeft = px * k - ax; area.scrollTop = py * k - ay;
-      clearTimeout(S.zt); S.zt = setTimeout(render, 160);
+      S.zoom = z; layout(!!live); area.scrollLeft = px * k - ax; area.scrollTop = py * k - ay;
+      clearTimeout(S.zt); S.zt = setTimeout(() => { layout(); render(); }, 160);
     },
     count() { return S.els.length; }
   };
@@ -1472,6 +1533,16 @@ window.PV = function (o) {
       <div id="join-error"></div>
       <button id="start-btn" onclick="joinClass()">Start Lesson</button>
     </div>
+  </div>
+
+  <div id="rejoin-splash">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <g transform="scale(.6667)"><rect x="4" y="4" width="88" height="88" rx="22" fill="#7d68d0"/><path d="M34 26 V68 H66" fill="none" stroke="#efebfc" stroke-width="11" stroke-linejoin="round" stroke-linecap="round" transform="translate(-6 8)"/><circle cx="70" cy="24" r="6" fill="#efebfc"/><circle cx="79" cy="38" r="4" fill="#efebfc"/><circle cx="76" cy="14" r="3" fill="#efebfc"/></g>
+    </svg>
+    </div>
+    <div class="rj-spin"></div>
+    <div class="rj-text">Rejoining your class…</div>
   </div>
 
   <div id="viewer-container">
@@ -1614,6 +1685,10 @@ window.PV = function (o) {
       const linkCode = cleanCode(fromLink);
       if (auto && CODE_RE.test(cleanCode(savedCode)) && savedName && (!linkCode || linkCode === cleanCode(savedCode)) && nameInput.value && initialInput.value) {
         window.joinClass();
+      } else if (auto) {
+        // The "rejoin" splash (shown before first paint, purely from the auto flag) doesn't match a real
+        // auto-join here — fall back to the ordinary join form instead of leaving them stuck on the splash.
+        try { document.documentElement.removeAttribute('data-ll-rejoin'); } catch (_) {}
       }
     }, 0);
 
@@ -1673,7 +1748,7 @@ window.PV = function (o) {
     function zStep() {
       zRaf = 0; if (zTgt == null) return;
       const cur = pv.zoom, d = zTgt - cur, n = (zSm && Math.abs(d) > .004) ? cur + d * .3 : zTgt;
-      pv.setZoom(n, zAnc[0], zAnc[1]);
+      pv.setZoom(n, zAnc[0], zAnc[1], true);
       if (n !== zTgt && Math.abs(zTgt - pv.zoom) > .002) zRaf = requestAnimationFrame(zStep); else zTgt = null;
     }
     function setZoom(z, cx, cy, smooth) { zTgt = z; zAnc = [cx, cy]; zSm = !!smooth; if (!zRaf) zRaf = requestAnimationFrame(zStep); }
@@ -1759,7 +1834,11 @@ window.PV = function (o) {
       const ok = window.dgConfirm ? await window.dgConfirm('Sign out?', 'You will leave this class and can rejoin with the code.', 'Sign out', 'Stay') : true;
       if (!ok) return;
       try { if (studentRef) await update(studentRef, { status: 'offline' }); } catch (_) {}
-      endSession('Signed out', 'You have left the class. Press the button to sign in again.');
+      // A real sign-out: forget this device's saved name and class code entirely (not just the
+      // auto-rejoin flag), so "Back to start" lands on a genuinely blank join form, and reopening
+      // index.html doesn't skip straight back in either — both read this same saved info.
+      try { localStorage.removeItem('cf_student_code'); localStorage.removeItem('cf_student_name'); } catch (_) {}
+      endSession('Signed out', 'You have left the class. Press the button to go back and sign in again.');
     };
 
     // Same set the teacher page uses to colour each pill
@@ -1909,7 +1988,9 @@ window.PV = function (o) {
           localStorage.setItem('cf_emoji_' + safeId, myEmoji);
         } catch (_) {}
 
+        try { document.documentElement.removeAttribute('data-ll-rejoin'); } catch (_) {}
         document.getElementById('join').style.display = 'none';
+        document.getElementById('rejoin-splash').style.display = 'none';
         document.getElementById('viewer-container').style.display = 'flex';
         joinedOk = true; pauseSync();
 
@@ -2231,6 +2312,10 @@ window.PV = function (o) {
         });
       } catch (err) {
         console.error(err);
+        // The silent auto-rejoin didn't work (wrong day, class gone, network blip, etc.) —
+        // drop the "Rejoining…" splash and show the real join form with the error, instead of leaving them stuck.
+        try { document.documentElement.removeAttribute('data-ll-rejoin'); } catch (_) {}
+        document.getElementById('rejoin-splash').style.display = 'none';
         setError(err instanceof UserError ? err.message : 'Could not join: ' + err.message);
         startBtn.disabled = false;
         startBtn.textContent = 'Start Lesson';
