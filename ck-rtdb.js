@@ -37,6 +37,12 @@ function ckInit() {
   ckReady = new Promise((resolve, reject) => {
     if (!window.CloudKit) { reject(new Error('CloudKit JS did not load — check the <script src> tag and your network.')); return; }
     try {
+      // The page's own dark-mode detection sets data-ll="dark"/"light" on <html> before
+      // first paint (see the inline theme script). A 'black' sign-in button is invisible
+      // against this app's dark background, so pick the button theme to match — this was
+      // the cause of the "missing" sign-in button on a dark-mode device.
+      const isDark = document.documentElement.getAttribute('data-ll') === 'dark';
+      const btnTheme = isDark ? 'white' : 'black';
       CloudKit.configure({
         containers: [{
           containerIdentifier: CK_CONTAINER_ID,
@@ -44,8 +50,8 @@ function ckInit() {
             // Web API token, restricted to https://lessonlab.uk (CloudKit Dashboard → Tokens & Keys → LessonLabAPI).
             apiToken: '1771b4b449740324db62f225cf9c3a4165f6acc657c90f3d4f276233e4e60297',
             persist: true,
-            signInButton: { id: 'ck-signin-btn', theme: 'black' },
-            signOutButton: { id: 'ck-signout-btn', theme: 'black' }
+            signInButton: { id: 'ck-signin-btn', theme: btnTheme },
+            signOutButton: { id: 'ck-signout-btn', theme: btnTheme }
           },
           environment: CK_ENVIRONMENT
         }]
@@ -114,7 +120,12 @@ async function ckFetchSubtree(db, watchPath) {
     }
     frontier = nextFrontier;
   }
-  return buildTree(collected, watchPath);
+  const val = buildTree(collected, watchPath);
+  // Turn on verbose per-poll logging from the browser console with: window.CK_DEBUG = true
+  if (window.CK_DEBUG) {
+    console.log('[ck-rtdb:debug] watchPath=', JSON.stringify(watchPath), 'records found:', collected.map(c => c.path), 'value:', val);
+  }
+  return val;
 }
 
 export function initializeApp(_config) { return { name: '[DEFAULT]' }; }
@@ -156,6 +167,7 @@ async function writeNode(path, value) {
     return;
   }
   const record = { recordType: 'RTDBNode', recordName: path, fields: { path: { value: path }, parentPath: { value: parentOf(path) }, json: { value: JSON.stringify(value) } } };
+  if (window.CK_DEBUG) console.log('[ck-rtdb:debug] write path=', JSON.stringify(path), 'parentPath=', JSON.stringify(parentOf(path)), 'value=', value);
   await db.saveRecords([record]);
 }
 
