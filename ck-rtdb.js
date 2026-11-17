@@ -13,15 +13,21 @@
  * use one CloudKit "request" per poll per open listener. That trade-off
  * is inherent to CloudKit JS on the web, not a bug in this file.
  *
- * TESTED AGAINST A REAL CONTAINER as of 2026-11-17. One real limit was
- * found and fixed: CloudKit's BEGINS_WITH query comparator caps its value
- * at 30 characters, which Firebase-style paths exceed — subtree reads now
- * walk the tree level-by-level using EQUALS on a "parentPath" field
- * instead (see ckFetchSubtree). This requires an RTDBNode schema field
- * named "parentPath" (String, queryable) alongside "path" and "json" —
- * add it in CloudKit Dashboard → Schema → RTDBNode → Deploy Schema
- * Changes if you haven't already. Still watch the console for CKError
- * responses as you exercise more of the app for real.
+ * TESTED AGAINST A REAL CONTAINER as of 2026-11-17. Two real limits were
+ * found and fixed: (1) CloudKit's BEGINS_WITH query comparator caps its
+ * value at 30 characters, which Firebase-style paths exceed; (2) a one-
+ * level-at-a-time EQUALS walk on "parentPath" also broke, because only
+ * leaf values get written as records — a leaf several levels under the
+ * watched path has no record at the intermediate container levels for a
+ * walk to step through. Fixed by giving every record a full "ancestors"
+ * list (every proper ancestor path, root included) and finding all
+ * descendants of a watched path in ONE query: "ancestors LIST_CONTAINS
+ * watchPath" (see ckFetchDescendants/ckFetchSubtree). This requires the
+ * RTDBNode schema to have an "ancestors" field — type String List,
+ * queryable — alongside "path", "parentPath" and "json", with a matching
+ * Queryable index added under Schema → Indexes, then Deploy Schema
+ * Changes. Still watch the console for CKError responses as you exercise
+ * more of the app for real.
  *
  * ---- SET THESE BEFORE USE ----
  */
@@ -68,6 +74,19 @@ function parentOf(path) {
   const idx = path.lastIndexOf('/');
   return idx === -1 ? '' : path.slice(0, idx);
 }
+function ancestorsOf(path) {
+  // Every proper ancestor path of `path`, root ('') included, so a single
+  // "ancestors LIST_CONTAINS watchPath" query finds a leaf at ANY depth
+  // under watchPath — not just its immediate children. (A one-level-at-a-
+  // time parentPath walk breaks here: a leaf like a/b/c/d has no record at
+  // a/b/c itself, since only leaves get written, so a parent-by-parent walk
+  // starting from a/b never reaches it.)
+  const parts = path.split('/').filter(Boolean);
+  const out = [''];
+  let acc = '';
+  for (let i = 0; i < parts.length - 1; i++) { acc = acc ? acc + '/' + parts[i] : parts[i]; out.push(acc); }
+  return out;
+}
 function isAncestorOrSelf(nodePath, watchPath) {
   if (nodePath === watchPath) return true;
   return nodePath.startsWith(watchPath === '' ? '' : watchPath + '/');
@@ -94,13 +113,16 @@ function buildTree(flatRecords, watchPath) {
 
 // NOTE: CloudKit's query engine caps a BEGINS_WITH comparison value at 30
 // characters, and Firebase-style paths routinely run longer than that — a
-// real limit discovered against the live container, not a guess. So instead
-// of one prefix query over "path", we walk the tree down from watchPath one
-// level at a time using EQUALS queries against a "parentPath" field (no
-// length cap on EQUALS). This costs one query per level of depth under
-// watchPath rather than one query total, but stays correct at any path length.
-async function ckFetchChildren(container, parentPath) {
-  const query = { recordType: 'RTDBNode', filterBy: [{ comparator: 'EQUALS', fieldName: 'parentPath', fieldValue: { value: parentPath } }] };
+// real limit discovered against the live container, not a guess. A one-
+// level-at-a-time EQUALS walk on "parentPath" was tried next, but that also
+// breaks: only LEAF values get written as records, so a leaf several levels
+// under watchPath has no record at the intermediate container levels for
+// the walk to step through. The fix: every record also stores its full list
+// of ancestor paths ("ancestors", a queryable String List field), so ONE
+// query — "ancestors LIST_CONTAINS watchPath" — finds every descendant at
+// any depth in a single round trip, with no walk needed.
+async function ckFetchDescendants(container, watchPath) {
+  const query = { recordType: 'RTDBNode', filterBy: [{ comparator: 'LIST_CONTAINS', fieldName: 'ancestors', fieldValue: { value: watchPath } }] };
   const resp = await container.publicCloudDatabase.performQuery(query);
   return (resp.records || []).map(r => ({ path: r.fields.path.value, json: r.fields.json ? r.fields.json.value : 'null' }));
 }
@@ -111,15 +133,9 @@ async function ckFetchSubtree(db, watchPath) {
   const own = await container.publicCloudDatabase.fetchRecords([watchPath]).catch(() => ({ records: [] }));
   for (const r of (own.records || [])) collected.push({ path: r.recordName, json: r.fields.json ? r.fields.json.value : 'null' });
 
-  let frontier = [watchPath];
-  while (frontier.length) {
-    const levels = await Promise.all(frontier.map((p) => ckFetchChildren(container, p)));
-    const nextFrontier = [];
-    for (const children of levels) {
-      for (const child of children) { collected.push(child); nextFrontier.push(child.path); }
-    }
-    frontier = nextFrontier;
-  }
+  const descendants = await ckFetchDescendants(container, watchPath);
+  for (const d of descendants) if (!collected.find((c) => c.path === d.path)) collected.push(d);
+
   const val = buildTree(collected, watchPath);
   // Turn on verbose per-poll logging from the browser console with: window.CK_DEBUG = true
   if (window.CK_DEBUG) {
@@ -166,8 +182,9 @@ async function writeNode(path, value) {
     await db.deleteRecords([path]).catch(() => {});
     return;
   }
-  const record = { recordType: 'RTDBNode', recordName: path, fields: { path: { value: path }, parentPath: { value: parentOf(path) }, json: { value: JSON.stringify(value) } } };
-  if (window.CK_DEBUG) console.log('[ck-rtdb:debug] write path=', JSON.stringify(path), 'parentPath=', JSON.stringify(parentOf(path)), 'value=', value);
+  const ancestors = ancestorsOf(path);
+  const record = { recordType: 'RTDBNode', recordName: path, fields: { path: { value: path }, parentPath: { value: parentOf(path) }, ancestors: { value: ancestors }, json: { value: JSON.stringify(value) } } };
+  if (window.CK_DEBUG) console.log('[ck-rtdb:debug] write path=', JSON.stringify(path), 'ancestors=', ancestors, 'value=', value);
   await db.saveRecords([record]);
 }
 
