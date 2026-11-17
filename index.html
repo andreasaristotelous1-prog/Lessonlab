@@ -99,8 +99,8 @@ var cb=document.getElementById('xp'),st=document.getElementById('go-student'),te
 var ext=location.protocol==='file:'?'.html':'';
 function apply(on){
   document.body.classList.toggle('xp-on',on);cb.checked=on;
-  st.setAttribute('href',(on?'student-p2p':'student')+ext);
-  te.setAttribute('href',(on?'teacher-p2p':'teacher')+ext);
+  st.setAttribute('href',(on?'student-ws':'student')+ext);
+  te.setAttribute('href',(on?'teacher-ws':'teacher')+ext);
 }
 var on=false;try{on=localStorage.getItem('ll_experiment')==='1'}catch(e){}
 apply(on);
