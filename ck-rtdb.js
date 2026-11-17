@@ -13,10 +13,15 @@
  * use one CloudKit "request" per poll per open listener. That trade-off
  * is inherent to CloudKit JS on the web, not a bug in this file.
  *
- * HONESTLY UNTESTED: this has not run against a real CloudKit container.
- * It has only been checked for syntax errors and exercised against a
- * local stub that mimics CloudKit JS's shape. Treat first real use as a
- * test, and watch the browser console for CKError responses.
+ * TESTED AGAINST A REAL CONTAINER as of 2026-11-17. One real limit was
+ * found and fixed: CloudKit's BEGINS_WITH query comparator caps its value
+ * at 30 characters, which Firebase-style paths exceed — subtree reads now
+ * walk the tree level-by-level using EQUALS on a "parentPath" field
+ * instead (see ckFetchSubtree). This requires an RTDBNode schema field
+ * named "parentPath" (String, queryable) alongside "path" and "json" —
+ * add it in CloudKit Dashboard → Schema → RTDBNode → Deploy Schema
+ * Changes if you haven't already. Still watch the console for CKError
+ * responses as you exercise more of the app for real.
  *
  * ---- SET THESE BEFORE USE ----
  */
@@ -52,6 +57,11 @@ function ckInit() {
 }
 
 function pathKey(p) { return String(p).replace(/^\/+|\/+$/g, ''); }
+function parentOf(path) {
+  // Immediate parent path, '' for a top-level ("/foo") node.
+  const idx = path.lastIndexOf('/');
+  return idx === -1 ? '' : path.slice(0, idx);
+}
 function isAncestorOrSelf(nodePath, watchPath) {
   if (nodePath === watchPath) return true;
   return nodePath.startsWith(watchPath === '' ? '' : watchPath + '/');
@@ -76,14 +86,35 @@ function buildTree(flatRecords, watchPath) {
   return any ? root : null;
 }
 
+// NOTE: CloudKit's query engine caps a BEGINS_WITH comparison value at 30
+// characters, and Firebase-style paths routinely run longer than that — a
+// real limit discovered against the live container, not a guess. So instead
+// of one prefix query over "path", we walk the tree down from watchPath one
+// level at a time using EQUALS queries against a "parentPath" field (no
+// length cap on EQUALS). This costs one query per level of depth under
+// watchPath rather than one query total, but stays correct at any path length.
+async function ckFetchChildren(container, parentPath) {
+  const query = { recordType: 'RTDBNode', filterBy: [{ comparator: 'EQUALS', fieldName: 'parentPath', fieldValue: { value: parentPath } }] };
+  const resp = await container.publicCloudDatabase.performQuery(query);
+  return (resp.records || []).map(r => ({ path: r.fields.path.value, json: r.fields.json ? r.fields.json.value : 'null' }));
+}
+
 async function ckFetchSubtree(db, watchPath) {
   const container = await ckInit();
-  const query = { recordType: 'RTDBNode', filterBy: [{ comparator: 'BEGINS_WITH', fieldName: 'path', fieldValue: { value: watchPath } }] };
-  const resp = await container.publicCloudDatabase.performQuery(query);
+  const collected = [];
   const own = await container.publicCloudDatabase.fetchRecords([watchPath]).catch(() => ({ records: [] }));
-  const recs = (resp.records || []).map(r => ({ path: r.fields.path.value, json: r.fields.json ? r.fields.json.value : 'null' }));
-  for (const r of (own.records || [])) if (!recs.find(x => x.path === r.recordName)) recs.push({ path: r.recordName, json: r.fields.json ? r.fields.json.value : 'null' });
-  return buildTree(recs, watchPath);
+  for (const r of (own.records || [])) collected.push({ path: r.recordName, json: r.fields.json ? r.fields.json.value : 'null' });
+
+  let frontier = [watchPath];
+  while (frontier.length) {
+    const levels = await Promise.all(frontier.map((p) => ckFetchChildren(container, p)));
+    const nextFrontier = [];
+    for (const children of levels) {
+      for (const child of children) { collected.push(child); nextFrontier.push(child.path); }
+    }
+    frontier = nextFrontier;
+  }
+  return buildTree(collected, watchPath);
 }
 
 export function initializeApp(_config) { return { name: '[DEFAULT]' }; }
@@ -124,7 +155,7 @@ async function writeNode(path, value) {
     await db.deleteRecords([path]).catch(() => {});
     return;
   }
-  const record = { recordType: 'RTDBNode', recordName: path, fields: { path: { value: path }, json: { value: JSON.stringify(value) } } };
+  const record = { recordType: 'RTDBNode', recordName: path, fields: { path: { value: path }, parentPath: { value: parentOf(path) }, json: { value: JSON.stringify(value) } } };
   await db.saveRecords([record]);
 }
 
