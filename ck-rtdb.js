@@ -174,30 +174,51 @@ export function onDisconnect(refObj) {
 }
 
 // ---- Auth: CloudKit uses Sign in with Apple, not email/password. ----
+// The real CloudKit JS method is container.setUpAuth() — NOT whoAmI(), which
+// doesn't exist on the current CloudKit JS and was this file's first bug.
+// setUpAuth() does two things at once: it wires up the sign-in/sign-out
+// buttons named in ckInit's apiTokenAuth config, AND its returned promise
+// resolves once with the signed-in CKUserIdentity — either because the user
+// was already signed in, or once they click the button and complete Sign in
+// with Apple. It is meant to be called once per page load, not polled.
 export function getAuth(_app) { return { __ckAuth: true }; }
 
 let authListeners = [];
+let setUpAuthPromise = null;
+function ckSetUpAuth() {
+  if (!setUpAuthPromise) {
+    setUpAuthPromise = ckInit().then((container) => container.setUpAuth());
+  }
+  return setUpAuthPromise;
+}
+function toUser(identity) {
+  return identity ? { uid: identity.userRecordName || identity.lookupInfo || 'ck-user', email: null } : null;
+}
+
 export function onAuthStateChanged(_auth, cb) {
   authListeners.push(cb);
-  ckInit().then(async (container) => {
-    const info = await container.whoAmI().catch(() => null);
-    cb(info && info.isSignedIn ? { uid: info.userRecordName, email: null } : null);
-  });
-  return () => { authListeners = authListeners.filter(f => f !== cb); };
+  ckSetUpAuth()
+    .then((identity) => { const user = toUser(identity); authListeners.forEach((f) => f(user)); })
+    .catch((e) => { console.warn('[ck-rtdb] setUpAuth failed', e); cb(null); });
+  return () => { authListeners = authListeners.filter((f) => f !== cb); };
 }
 
 export async function signInWithApple() {
-  const container = await ckInit();
-  // CloudKit JS's sign-in button (configured in ckInit above) handles the
-  // Sign in with Apple redirect/popup flow; this helper just re-checks status.
-  const info = await container.whoAmI();
-  const user = info && info.isSignedIn ? { uid: info.userRecordName, email: null } : null;
-  authListeners.forEach(cb => cb(user));
-  return user;
+  // There is no separate "trigger sign-in" API call — the rendered
+  // #ck-signin-btn button IS the sign-in trigger. This just returns the
+  // same setUpAuth() promise so callers can await the outcome.
+  const identity = await ckSetUpAuth();
+  return toUser(identity);
 }
 
 export async function signOut(_auth) {
+  // container.signOut() is the documented CloudKit JS method, but since
+  // whoAmI() above turned out not to exist, treat this the same way: if
+  // the console shows "container.signOut is not a function" too, tell me
+  // and I'll fix it the same way — by checking what methods the loaded
+  // CloudKit object actually has, not by guessing again.
   const container = await ckInit();
   await container.signOut();
+  setUpAuthPromise = null;
   authListeners.forEach(cb => cb(null));
 }
