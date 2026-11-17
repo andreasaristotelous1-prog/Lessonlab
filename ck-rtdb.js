@@ -35,7 +35,7 @@ export const CK_CONTAINER_ID = 'iCloud.lessonlab'; // from CloudKit Dashboard
 export const CK_ENVIRONMENT = 'development'; // switch to 'production' once this is working and deployed for real
 export const CK_APPLE_SERVICES_ID = 'uk.lessonlab.web'; // registered Services ID, grouped with the "LessonLab" App ID (uk.lessonlab.app)
 export const CK_REDIRECT_URI = location.origin + location.pathname; // resolves to https://lessonlab.uk/teacher-p2p or /student-p2p once hosted there — both are registered as Return URLs on the Services ID
-export const CK_POLL_MS = 1500; // how often an open listener re-checks its path
+export const CK_POLL_MS = 2200; // how often an open listener re-checks its path
 
 let ckReady = null;
 function ckInit() {
@@ -157,16 +157,36 @@ export function onValue(refObj, cb, _opts) {
   if (refObj.path === '.info/serverTimeOffset') { cb({ val: () => 0, exists: () => true }); return () => {}; }
   let last = undefined, stopped = false;
   let timer = null;
+  let consecutiveErrors = 0;
+  // Every open listener used to poll in lockstep every CK_POLL_MS, so a page
+  // with a dozen+ listeners (page state, scroll, zoom, timer, students,
+  // labbook, diagnostics...) fired a burst of requests all at once, every
+  // 1.5s. That's a plausible cause of the "network connection was lost"
+  // errors seen in real testing — not a server-side rejection, but requests
+  // getting dropped/reset under that burst. Two mitigations: (1) jitter so
+  // listeners spread out instead of firing together, (2) back off further
+  // (rather than hammering again immediately) after a run of failures.
+  function nextDelay() {
+    const jitter = Math.random() * CK_POLL_MS * 0.5;
+    const backoff = consecutiveErrors > 0 ? Math.min(consecutiveErrors, 5) * CK_POLL_MS : 0;
+    return CK_POLL_MS + jitter + backoff;
+  }
   async function tick() {
     if (stopped) return;
     try {
       const val = await ckFetchSubtree(null, refObj.path);
+      consecutiveErrors = 0;
       const serialised = JSON.stringify(val);
       if (serialised !== last) { last = serialised; cb({ val: () => val, exists: () => val !== null && val !== undefined, key: refObj.path.split('/').pop() || null }); }
-    } catch (e) { console.warn('[ck-rtdb] onValue poll failed for', refObj.path, e); }
-    if (!stopped) timer = setTimeout(tick, CK_POLL_MS);
+    } catch (e) {
+      consecutiveErrors++;
+      console.warn('[ck-rtdb] onValue poll failed for', refObj.path, '(consecutive failures:', consecutiveErrors, ')', e);
+    }
+    if (!stopped) timer = setTimeout(tick, nextDelay());
   }
-  tick();
+  // Stagger each listener's first poll too, so a page that creates many
+  // listeners at once doesn't fire them all in the same instant.
+  timer = setTimeout(tick, Math.random() * CK_POLL_MS);
   return () => { stopped = true; if (timer) clearTimeout(timer); };
 }
 
