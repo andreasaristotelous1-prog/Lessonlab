@@ -14,8 +14,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Lessonlab Teacher">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%2096%2096%27%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%3E%3Crect%20x%3D%274%27%20y%3D%274%27%20width%3D%2788%27%20height%3D%2788%27%20rx%3D%2722%27%20fill%3D%27%237d68d0%27%2F%3E%3Cg%20transform%3D%27translate%2848%2048%29%20scale%282.3%29%20translate%28-73.5%20-26.5%29%27%3E%3Ccircle%20cx%3D%2770%27%20cy%3D%2724%27%20r%3D%276%27%20fill%3D%27%23efebfc%27%2F%3E%3Ccircle%20cx%3D%2779%27%20cy%3D%2738%27%20r%3D%274%27%20fill%3D%27%23efebfc%27%2F%3E%3Ccircle%20cx%3D%2776%27%20cy%3D%2714%27%20r%3D%273%27%20fill%3D%27%23efebfc%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+  <link rel="icon" href="lessonlab.ico?v=3" sizes="any">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%2096%2096%27%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%3E%3Crect%20x%3D%274%27%20y%3D%274%27%20width%3D%2788%27%20height%3D%2788%27%20rx%3D%2722%27%20fill%3D%27%23ee5fa7%27%2F%3E%3Cg%20transform%3D%27translate%2848%2048%29%20scale%282.3%29%20translate%28-73.5%20-26.5%29%27%3E%3Ccircle%20cx%3D%2770%27%20cy%3D%2724%27%20r%3D%276%27%20fill%3D%27%23ffffff%27%2F%3E%3Ccircle%20cx%3D%2779%27%20cy%3D%2738%27%20r%3D%274%27%20fill%3D%27%23ffffff%27%2F%3E%3Ccircle%20cx%3D%2776%27%20cy%3D%2714%27%20r%3D%273%27%20fill%3D%27%23ffffff%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js">
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js">
@@ -4660,15 +4662,16 @@ window.PV = function (o) {
         if (!window.PDFLib || !window.pdfjsLib) return bytes;
         const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise, hits = {}; let pagesHit = 0;
         const RE = /^(page\s*)?\d{1,3}(\s*(\/|of)\s*\d{1,3})?$|^[-–—]\s*\d{1,3}\s*[-–—]$/i;
+        const TR = /(?:\s*[·•|–—-]\s*)?(?:\bpage\s*\d{1,3}(?:\s*(?:of|\/)\s*\d{1,3})?|\s\d{1,3}\s*(?:of|\/)\s*\d{1,3})\s*$/i;
         for (let i = 1; i <= doc.numPages; i++) {
           const pg = await doc.getPage(i); if (pg.rotate % 360) continue;
-          const v = pg.view, H = v[3] - v[1], tc = await pg.getTextContent();
-          for (const it of tc.items) {
-            const t = (it.str || '').trim(); if (!t || !RE.test(t)) continue;
-            const y = it.transform[5] - v[1]; if (!(y < H * 0.09 || y > H * 0.93)) continue;
-            const h = it.height || Math.abs(it.transform[3]) || 10;
-            if (!hits[i]) { hits[i] = []; pagesHit++; } hits[i].push({ x: it.transform[4], y: it.transform[5], w: it.width || h * t.length * 0.6, h });
-          }
+          const v = pg.view, H = v[3] - v[1], tc = await pg.getTextContent(), marg = [];
+          for (const it of tc.items) { const t = it.str || ''; if (!t.trim()) continue; const y = it.transform[5] - v[1]; if (y < H * 0.09 || y > H * 0.93) marg.push({ it, t, y }); }
+          const add = (it, y, from, len) => { const h = it.height || Math.abs(it.transform[3]) || 10, w = it.width || h * len * 0.6, x0 = it.transform[4] + w * (from / Math.max(1, len)) + (from ? 1 : 0); if (!hits[i]) { hits[i] = []; pagesHit++; } hits[i].push({ x: x0, y: it.transform[5], w: it.transform[4] + w - x0, h }); };
+          const done = [];
+          marg.forEach((m) => { const t = m.t.trim(); if (RE.test(t)) { add(m.it, m.y, 0, m.t.length); done.push(m); } else { const k = TR.exec(m.t); if (k && k.index > 0) { add(m.it, m.y, k.index + 1.5, m.t.length); done.push(m); } } });
+          /* "Page", "of" and "/" printed as their own pieces next to a number */
+          if (done.length) marg.forEach((m) => { if (done.indexOf(m) < 0 && /^\s*(page|of|\/)\s*$/i.test(m.t) && done.some((d) => Math.abs(d.y - m.y) < 3)) add(m.it, m.y, 0, m.t.length); });
         }
         if (!pagesHit || pagesHit < Math.min(2, doc.numPages) || pagesHit < Math.floor(doc.numPages * 0.3)) return bytes;
         const pd = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true }), white = PDFLib.rgb(1, 1, 1);
@@ -8726,7 +8729,7 @@ html body #login .login-card > *:not(.logo):not(h1):not(.back-link):not(#z):not(
 .pt-big { position: relative;} .pt-big small { position: absolute; left: 8px; font: 800 calc(var(--cell) * .6)/1 Arial, sans-serif !important; opacity: .85 !important;}
 .pt-big small.pm { top: 7px;} .pt-big small.pz { bottom: 7px; font-weight: 700 !important; opacity: .75 !important;}
 .pt-big b { margin-left: calc(var(--cell) * .25);}
-#code-pop { position: fixed; z-index: 80; width: 250px; box-sizing: border-box; padding: 14px 16px 16px; border-radius: 20px; text-align: center; color: rgb(235,235,235); background: rgba(20,20,20,.55); backdrop-filter: blur(28px) saturate(2.2) brightness(1.08); -webkit-backdrop-filter: blur(28px) saturate(2.2) brightness(1.08); box-shadow: inset 0 0 0 1px rgba(235,235,235,.12), 0 14px 36px rgba(20,20,20,.45); font-family: Quicksand, Arial, sans-serif;}
+#code-pop { position: fixed; z-index: 5000; width: 300px; max-width: calc(100vw - 16px); box-sizing: border-box; padding: 16px; border-radius: 22px; text-align: center; color: rgb(235,235,235); background: rgb(0,0,0); box-shadow: none; border: 0; font-family: Quicksand, Arial, sans-serif;}
 #code-pop[hidden] { display: none;}
 #code-pop .cp-t, #code-pop .cp-s { font-size: .72rem; font-weight: 700; letter-spacing: .04em; opacity: .65;}
 #code-pop .cp-c { margin: 4px 0 10px; font-size: 2.4rem; font-weight: 800; letter-spacing: .14em; padding-left: .14em; line-height: 1.1;}
@@ -9322,7 +9325,7 @@ window.llLibFmt = (m) => { const d = new Date(m.used), mb = m.size / 1048576; re
     if (!pop.hidden && pop.querySelector('.cp-c').textContent === code) { pop.hidden = true; return; }
     pop.querySelector('.cp-c').textContent = code; pop.querySelector('.cp-a').textContent = addr.replace(/^https?:\/\//, '');
     pop._t = performance.now(); pop.hidden = false; const r = anchor.getBoundingClientRect(), w = pop.offsetWidth;
-    pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w + 14)) + 'px'; pop.style.top = (r.bottom + 12) + 'px';
+    pop.style.left = Math.max(8, innerWidth - w - 14) + 'px'; pop.style.top = Math.max(8, Math.min(88, innerHeight - pop.offsetHeight - 8)) + 'px';
   };
   /* the bubble's own click handlers call showCodeScreen via a click; stop that click closing the popout straight away */
 })();
