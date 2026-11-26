@@ -45,7 +45,8 @@
   <script>/* canvas-confetti 1.6.0 (ISC licence), built in so it needs no download */
 !function(t,e){!function t(e,n,a,i){var r=!!(e.Worker&&e.Blob&&e.Promise&&e.OffscreenCanvas&&e.OffscreenCanvasRenderingContext2D&&e.HTMLCanvasElement&&e.HTMLCanvasElement.prototype.transferControlToOffscreen&&e.URL&&e.URL.createObjectURL);function o(){}function l(t){var a=n.exports.Promise,i=void 0!==a?a:e.Promise;return"function"==typeof i?new i(t):(t(o,o),null)}var c,s,u,f,h,d,m,g,b,v=(u=Math.floor(1e3/60),f={},h=0,"function"==typeof requestAnimationFrame&&"function"==typeof cancelAnimationFrame?(c=function(t){var e=Math.random();return f[e]=requestAnimationFrame(function n(a){h===a||h+u-1<a?(h=a,delete f[e],t()):f[e]=requestAnimationFrame(n)}),e},s=function(t){f[t]&&cancelAnimationFrame(f[t])}):(c=function(t){return setTimeout(t,u)},s=function(t){return clearTimeout(t)}),{frame:c,cancel:s}),M=(g={},function(){if(d)return d;if(!a&&r){var e=["var CONFETTI, SIZE = {}, module = {};","("+t.toString()+")(this, module, true, SIZE);","onmessage = function(msg) {","  if (msg.data.options) {","    CONFETTI(msg.data.options).then(function () {","      if (msg.data.callback) {","        postMessage({ callback: msg.data.callback });","      }","    });","  } else if (msg.data.reset) {","    CONFETTI && CONFETTI.reset();","  } else if (msg.data.resize) {","    SIZE.width = msg.data.resize.width;","    SIZE.height = msg.data.resize.height;","  } else if (msg.data.canvas) {","    SIZE.width = msg.data.canvas.width;","    SIZE.height = msg.data.canvas.height;","    CONFETTI = module.exports.create(msg.data.canvas);","  }","}"].join("\n");try{d=new Worker(URL.createObjectURL(new Blob([e])))}catch(t){return void 0!==typeof console&&"function"==typeof console.warn&&console.warn("🎊 Could not load worker",t),null}!function(t){function e(e,n){t.postMessage({options:e||{},callback:n})}t.init=function(e){var n=e.transferControlToOffscreen();t.postMessage({canvas:n},[n])},t.fire=function(n,a,i){if(m)return e(n,null),m;var r=Math.random().toString(36).slice(2);return m=l(function(a){function o(e){e.data.callback===r&&(delete g[r],t.removeEventListener("message",o),m=null,i(),a())}t.addEventListener("message",o),e(n,r),g[r]=o.bind(null,{data:{callback:r}})})},t.reset=function(){for(var e in t.postMessage({reset:!0}),g)g[e](),delete g[e]}}(d)}return d}),p={particleCount:50,angle:90,spread:45,startVelocity:45,decay:.9,gravity:1,drift:0,ticks:200,x:.5,y:.5,shapes:["square","circle"],zIndex:100,colors:["#26ccff","#a25afd","#ff5e7e","#88ff5a","#fcff42","#ffa62d","#ff36ff"],disableForReducedMotion:!1,scalar:1};function y(t,e,n){return function(t,e){return e?e(t):t}(t&&null!=t[e]?t[e]:p[e],n)}function w(t){return t<0?0:Math.floor(t)}function x(t,e){return Math.floor(Math.random()*(e-t))+t}function C(t){return parseInt(t,16)}function T(t){return t.map(I)}function I(t){var e=String(t).replace(/[^0-9a-f]/gi,"");return e.length<6&&(e=e[0]+e[0]+e[1]+e[1]+e[2]+e[2]),{r:C(e.substring(0,2)),g:C(e.substring(2,4)),b:C(e.substring(4,6))}}function k(t){t.width=document.documentElement.clientWidth,t.height=document.documentElement.clientHeight}function E(t){var e=t.getBoundingClientRect();t.width=e.width,t.height=e.height}function S(t){var e=t.angle*(Math.PI/180),n=t.spread*(Math.PI/180);return{x:t.x,y:t.y,wobble:10*Math.random(),wobbleSpeed:Math.min(.11,.1*Math.random()+.05),velocity:.5*t.startVelocity+Math.random()*t.startVelocity,angle2D:-e+(.5*n-Math.random()*n),tiltAngle:(.5*Math.random()+.25)*Math.PI,color:t.color,shape:t.shape,tick:0,totalTicks:t.ticks,decay:t.decay,drift:t.drift,random:Math.random()+2,tiltSin:0,tiltCos:0,wobbleX:0,wobbleY:0,gravity:3*t.gravity,ovalScalar:.6,scalar:t.scalar}}function F(t,e,n,r,o){var c,s,u=e.slice(),f=t.getContext("2d"),h=l(function(e){function l(){c=s=null,f.clearRect(0,0,r.width,r.height),o(),e()}c=v.frame(function e(){!a||r.width===i.width&&r.height===i.height||(r.width=t.width=i.width,r.height=t.height=i.height),r.width||r.height||(n(t),r.width=t.width,r.height=t.height),f.clearRect(0,0,r.width,r.height),u=u.filter(function(t){return function(t,e){e.x+=Math.cos(e.angle2D)*e.velocity+e.drift,e.y+=Math.sin(e.angle2D)*e.velocity+e.gravity,e.wobble+=e.wobbleSpeed,e.velocity*=e.decay,e.tiltAngle+=.1,e.tiltSin=Math.sin(e.tiltAngle),e.tiltCos=Math.cos(e.tiltAngle),e.random=Math.random()+2,e.wobbleX=e.x+10*e.scalar*Math.cos(e.wobble),e.wobbleY=e.y+10*e.scalar*Math.sin(e.wobble);var n=e.tick++/e.totalTicks,a=e.x+e.random*e.tiltCos,i=e.y+e.random*e.tiltSin,r=e.wobbleX+e.random*e.tiltCos,o=e.wobbleY+e.random*e.tiltSin;if(t.fillStyle="rgba("+e.color.r+", "+e.color.g+", "+e.color.b+", "+(1-n)+")",t.beginPath(),"circle"===e.shape)t.ellipse?t.ellipse(e.x,e.y,Math.abs(r-a)*e.ovalScalar,Math.abs(o-i)*e.ovalScalar,Math.PI/10*e.wobble,0,2*Math.PI):function(t,e,n,a,i,r,o,l,c){t.save(),t.translate(e,n),t.rotate(r),t.scale(a,i),t.arc(0,0,1,o,l,c),t.restore()}(t,e.x,e.y,Math.abs(r-a)*e.ovalScalar,Math.abs(o-i)*e.ovalScalar,Math.PI/10*e.wobble,0,2*Math.PI);else if("star"===e.shape)for(var l=Math.PI/2*3,c=4*e.scalar,s=8*e.scalar,u=e.x,f=e.y,h=5,d=Math.PI/h;h--;)u=e.x+Math.cos(l)*s,f=e.y+Math.sin(l)*s,t.lineTo(u,f),l+=d,u=e.x+Math.cos(l)*c,f=e.y+Math.sin(l)*c,t.lineTo(u,f),l+=d;else t.moveTo(Math.floor(e.x),Math.floor(e.y)),t.lineTo(Math.floor(e.wobbleX),Math.floor(i)),t.lineTo(Math.floor(r),Math.floor(o)),t.lineTo(Math.floor(a),Math.floor(e.wobbleY));return t.closePath(),t.fill(),e.tick<e.totalTicks}(f,t)}),u.length?c=v.frame(e):l()}),s=l});return{addFettis:function(t){return u=u.concat(t),h},canvas:t,promise:h,reset:function(){c&&v.cancel(c),s&&s()}}}function N(t,n){var a,i=!t,o=!!y(n||{},"resize"),c=y(n,"disableForReducedMotion",Boolean),s=r&&!!y(n||{},"useWorker")?M():null,u=i?k:E,f=!(!t||!s)&&!!t.__confetti_initialized,h="function"==typeof matchMedia&&matchMedia("(prefers-reduced-motion)").matches;function d(e,n,i){for(var r=y(e,"particleCount",w),o=y(e,"angle",Number),l=y(e,"spread",Number),c=y(e,"startVelocity",Number),s=y(e,"decay",Number),f=y(e,"gravity",Number),h=y(e,"drift",Number),d=y(e,"colors",T),m=y(e,"ticks",Number),g=y(e,"shapes"),b=y(e,"scalar"),v=function(t){var e=y(t,"origin",Object);return e.x=y(e,"x",Number),e.y=y(e,"y",Number),e}(e),M=r,p=[],C=t.width*v.x,I=t.height*v.y;M--;)p.push(S({x:C,y:I,angle:o,spread:l,startVelocity:c,color:d[M%d.length],shape:g[x(0,g.length)],ticks:m,decay:s,gravity:f,drift:h,scalar:b}));return a?a.addFettis(p):(a=F(t,p,u,n,i)).promise}function m(n){var r=c||y(n,"disableForReducedMotion",Boolean),m=y(n,"zIndex",Number);if(r&&h)return l(function(t){t()});i&&a?t=a.canvas:i&&!t&&(t=function(t){var e=document.createElement("canvas");return e.style.position="fixed",e.style.top="0px",e.style.left="0px",e.style.pointerEvents="none",e.style.zIndex=t,e}(m),document.body.appendChild(t)),o&&!f&&u(t);var g={width:t.width,height:t.height};function b(){if(s){var e={getBoundingClientRect:function(){if(!i)return t.getBoundingClientRect()}};return u(e),void s.postMessage({resize:{width:e.width,height:e.height}})}g.width=g.height=null}function v(){a=null,o&&e.removeEventListener("resize",b),i&&t&&(document.body.removeChild(t),t=null,f=!1)}return s&&!f&&s.init(t),f=!0,s&&(t.__confetti_initialized=!0),o&&e.addEventListener("resize",b,!1),s?s.fire(n,g,v):d(n,g,v)}return m.reset=function(){s&&s.reset(),a&&a.reset()},m}function P(){return b||(b=N(null,{useWorker:!0,resize:!0})),b}n.exports=function(){return P().apply(this,arguments)},n.exports.reset=function(){P().reset()},n.exports.create=N}(function(){return void 0!==t?t:"undefined"!=typeof self?self:this||{}}(),e,!1),t.confetti=e.exports}(window,{});
   </script>
-  <style>
+  <style id="ll-hold">html:not(.ll-ready) body{visibility:hidden !important}</style><script>setTimeout(function(){document.documentElement.classList.add('ll-ready')},4000)</script>
+<style>
     :root {
       --bg: rgb(30,29,36); --text: rgb(184,189,213); --muted: rgb(118,124,149); --line: rgb(45,43,56);
       --lav: rgb(46,41,58); --lav-2: rgb(39,36,47);}
@@ -1825,6 +1826,8 @@ window.PV = function (o) {
         window.__pdf().then((lib) => lib.getDocument({ data: array }).promise).then(async (doc) => {
           try { const m = await doc.getMetadata(); window.__lbSimple = !!(m && m.info && m.info.Subject === 'lessonlab-merged'); } catch (_) { window.__lbSimple = false; }
           if (seq !== loadSeq) return;   // a newer booklet arrived meanwhile
+          if (!pdfDoc && window.__startPage) { try { const sp = await window.__startPage(); if (sp) { teacherPage = sp; currentPage = sp; } } catch (_) {} }   /* first booklet after joining: start on the page the teacher is on */
+          if (seq !== loadSeq) return;
           pdfDoc = doc; loadTries = 0;
           waitingMsg.style.display = 'none';
           pv.setDoc(doc, currentPage).then(applyMode);
@@ -1835,6 +1838,7 @@ window.PV = function (o) {
       if (pdfDoc) return;
       waitingMsg.style.display = '';
       waitingMsg.textContent = 'Couldn\u2019t load the booklet (' + ((err && err.message) || 'error') + '). Trying again…';
+      clearTimeout(window.__rt); window.__rt = setTimeout(() => { if (pdfDoc || ended) return; if (window.__fetchBooklet) window.__fetchBooklet(); else if (window.__classB64) loadBase64PDF(window.__classB64); }, 4000);
     }
 
     /* ---------- joining ---------- */
@@ -2297,10 +2301,13 @@ window.PV = function (o) {
         /* watchdog: if the booklet still hasn't opened (slow school Wi-Fi, a connection that dropped, a missed update), ask again */
         const watchdog = setInterval(() => {
           if (ended) return clearInterval(watchdog);
-          if (pdfDoc || loadTries >= 4) return;
+          if (pdfDoc) return;
           loadTries++;
           get(pdfRef).then((s) => { const v = s.val(); if (v && !pdfDoc) { lastPdfKey = ''; loadBase64PDF(v); } }).catch(() => {});
-        }, 15000);
+        }, 10000);
+        window.__fetchBooklet = () => get(pdfRef).then((sn) => { const v = sn.val(); if (v && !pdfDoc) { lastPdfKey = ''; window.__classB64 = v; loadBase64PDF(v); } }).catch(() => {});
+        window.__startPage = () => Promise.race([get(ref(db, `${base}/session/currentPage`)).then((sn) => Number(sn.val()) || 0), new Promise((r) => setTimeout(() => r(0), 3000))]);
+        waitingMsg.style.cursor = 'pointer'; waitingMsg.addEventListener('click', () => { if (!pdfDoc) window.__fetchBooklet(); });
         onValue(ref(db, '.info/connected'), (s) => { if (s.val() === true && !pdfDoc) { loadTries = 0; } });
         document.addEventListener('visibilitychange', () => { if (!document.hidden && !pdfDoc) loadTries = 0; });
         /* re-sync the mode when the tab wakes (tablets pause tabs in the background) */
@@ -3304,6 +3311,22 @@ html body #rejoin-splash .rj-spin:not(#z) { border-top-color: rgb(255,127,192) !
 #old-bar[hidden] { display: none;}
 #old-bar button { border: 0; border-radius: 999px; padding: 7px 14px; background: #fff; color: #23336b; font: 700 .82rem Quicksand, Arial, sans-serif; cursor: pointer;}
 #lib-pop.rail-pop { position: fixed !important; z-index: 60;}
+
+#pt-pop { --cell: clamp(30px, calc((100vw - 190px) / 19.4), 52px) !important;}
+.pt-c small { position: absolute; left: 4px; font: 800 calc(var(--cell) * .3)/1 Arial, sans-serif; opacity: .85;}
+.pt-c small.pm { top: 3px;} .pt-c small.pz { bottom: 3px; font-weight: 700; opacity: .75;}
+.pt-c b { font: 800 calc(var(--cell) * .42)/1 Arial, sans-serif; margin-left: calc(var(--cell) * .12);}
+.pt-big { position: relative;} .pt-big small { position: absolute; left: 8px; font: 800 calc(var(--cell) * .6)/1 Arial, sans-serif !important; opacity: .85 !important;}
+.pt-big small.pm { top: 7px;} .pt-big small.pz { bottom: 7px; font-weight: 700 !important; opacity: .75 !important;}
+.pt-big b { margin-left: calc(var(--cell) * .25);}
+#code-pop { position: fixed; z-index: 80; width: 250px; box-sizing: border-box; padding: 14px 16px 16px; border-radius: 20px; text-align: center; color: rgb(235,235,235); background: rgba(20,20,20,.55); backdrop-filter: blur(28px) saturate(2.2) brightness(1.08); -webkit-backdrop-filter: blur(28px) saturate(2.2) brightness(1.08); box-shadow: inset 0 0 0 1px rgba(235,235,235,.12), 0 14px 36px rgba(20,20,20,.45); font-family: Quicksand, Arial, sans-serif;}
+#code-pop[hidden] { display: none;}
+#code-pop .cp-t, #code-pop .cp-s { font-size: .72rem; font-weight: 700; letter-spacing: .04em; opacity: .65;}
+#code-pop .cp-c { margin: 4px 0 10px; font-size: 2.4rem; font-weight: 800; letter-spacing: .14em; padding-left: .14em; line-height: 1.1;}
+#code-pop .cp-a { margin: 2px 0 12px; font-size: .85rem; font-weight: 700; word-break: break-all; opacity: .9;}
+#code-pop .cp-b { display: flex; gap: 8px;}
+#code-pop .cp-b button { flex: 1; border: 0; border-radius: 12px; padding: 9px 6px; background: rgba(255,255,255,.14); color: inherit; font: 700 .8rem Quicksand, Arial, sans-serif; cursor: pointer;}
+#code-pop .cp-b button:hover { background: rgba(255,255,255,.24);}
 </style>
 <script>
 (function () {
@@ -3482,7 +3505,8 @@ html body #rejoin-splash .rj-spin:not(#z) { border-top-color: rgb(255,127,192) !
   const ptBox = el('div'), grid = el('div', 'pt-grid'), leg = el('div', 'pt-legend'); let sel = 6, filt = -1;
   const detail = el('div', 'pt-detail'); grid.appendChild(detail);
   const cells = {};
-  ELS.forEach((e) => { const b = el('button', 'pt-c'); b.type = 'button'; b.title = e.name; b.style.setProperty('--c', au2(CATS[e.cat][1])); b.style.setProperty('--cd', au2a(CATS[e.cat][1], .25)); b.style.gridRow = e.row; b.style.gridColumn = e.col; b.innerHTML = '<small>' + e.n + '</small><b>' + e.sym + '</b>'; b.addEventListener('click', () => { sel = e.n; paintPT(); }); cells[e.n] = b; grid.appendChild(b); });
+  const gmc = (e) => e.n === 17 ? '35.5' : e.n === 29 ? '63.5' : String(Math.round(parseFloat(e.mass)));
+  ELS.forEach((e) => { const b = el('button', 'pt-c'); b.type = 'button'; b.title = e.name; b.style.setProperty('--c', au2(CATS[e.cat][1])); b.style.setProperty('--cd', au2a(CATS[e.cat][1], .25)); b.style.gridRow = e.row; b.style.gridColumn = e.col; b.innerHTML = '<small class="pm">' + gmc(e) + '</small><b>' + e.sym + '</b><small class="pz">' + e.n + '</small>'; b.addEventListener('click', () => { sel = e.n; paintPT(); }); cells[e.n] = b; grid.appendChild(b); });
   const sp = el('div', 'pt-sp'); grid.appendChild(sp);
   CATS.forEach((c, i) => { const b = el('button'); b.type = 'button'; b.innerHTML = '<i style="background:' + au2(c[1]) + '"></i>' + c[0]; b.addEventListener('click', () => { filt = filt === i ? -1 : i; paintPT(); }); leg.appendChild(b); });
   /* GCSE style: whole-number masses (Cl 35.5, Cu 63.5); groups 1-7 and 0, none for the transition metals */
@@ -3490,7 +3514,7 @@ html body #rejoin-splash .rj-spin:not(#z) { border-top-color: rgb(255,127,192) !
   const gp = (e) => e.col <= 2 ? ' · Group ' + e.col : e.col >= 13 ? ' · Group ' + (e.col === 18 ? 0 : e.col - 10) : '';
   function paintPT() {
     const e = ELS[sel - 1], col = CATS[e.cat][1];
-    detail.innerHTML = '<div class="pt-big" style="background:' + au2(col) + '"><small>' + e.n + '</small><b>' + e.sym + '</b></div><div class="pt-info"><h4>' + e.name + '</h4><p>Relative atomic mass: ' + gm(e) + '</p><p>' + CATS[e.cat][0] + '</p><p>' + (e.row > 8 ? 'Period ' + (e.row === 9 ? 6 : 7) : 'Period ' + e.row + gp(e)) + '</p></div>';
+    detail.innerHTML = '<div class="pt-big" style="background:' + au2(col) + '"><small class="pm">' + gm(e) + '</small><b>' + e.sym + '</b><small class="pz">' + e.n + '</small></div><div class="pt-info"><h4>' + e.name + '</h4><p>Relative atomic mass: ' + gm(e) + '</p><p>' + CATS[e.cat][0] + '</p><p>' + (e.row > 8 ? 'Period ' + (e.row === 9 ? 6 : 7) : 'Period ' + e.row + gp(e)) + '</p></div>';
     ELS.forEach((x) => { cells[x.n].classList.toggle('sel', x.n === sel); cells[x.n].classList.toggle('dim', filt > -1 && x.cat !== filt); });
     [...leg.children].forEach((b, i) => b.classList.toggle('on', i === filt));
   }
@@ -3669,11 +3693,13 @@ window.LLLib = (function () {
     persist() { try { return navigator.storage && navigator.storage.persist ? navigator.storage.persist() : Promise.resolve(false); } catch (_) { return Promise.resolve(false); } },
     async save(b64, o) {
       o = o || {}; const id = fp(b64), old = await get(id).catch(() => null), now = Date.now();
-      const m = { id, name: (old && old.name) || o.name || 'Booklet', lab: old ? old.lab : !!o.lab, size: Math.round(b64.length * 0.75), added: old ? old.added : now, used: now };
+      const cls = ((old && old.classes) || []).slice(); if (o.cls && cls.indexOf(o.cls) < 0) cls.push(o.cls);
+      const m = { id, classes: cls, name: (old && old.name) || o.name || 'Booklet', lab: old ? old.lab : !!o.lab, size: Math.round(b64.length * 0.75), added: old ? old.added : now, used: now };
       await run(['meta', 'blob'], 'readwrite', (t) => { t.objectStore('meta').put(m); if (!old) t.objectStore('blob').put(b64, id); return null; });
       this.persist(); return m;
     },
-    async list() { const a = await run('meta', 'readonly', (t) => t.objectStore('meta').getAll()).catch(() => []); return (a || []).sort((x, y) => y.used - x.used); },
+    async list(cls) { const a = await run('meta', 'readonly', (t) => t.objectStore('meta').getAll()).catch(() => []); return (a || []).filter((m) => !cls || !m.classes || !m.classes.length || m.classes.indexOf(cls) > -1).sort((x, y) => y.used - x.used); },
+    async unlink(id, cls) { const m = await get(id); if (!m) return; const c = (m.classes || []).filter((x) => x !== cls); if (!cls || !m.classes || !m.classes.length || !c.length) return this.remove(id); m.classes = c; await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); },
     getB64(id) { return run('blob', 'readonly', (t) => t.objectStore('blob').get(id)); },
     async rename(id, name) { const m = await get(id); if (!m) return null; m.name = name; await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); return m; },
     async touch(id) { const m = await get(id); if (!m) return; m.used = Date.now(); await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); },
@@ -3690,6 +3716,33 @@ window.llLibFmt = (m) => { const d = new Date(m.used), mb = m.size / 1048576; re
   document.body.appendChild(b);
   if (window.LLLib) window.LLLib.persist();
 })();
+
+/* ---- class code: a popout beside the code bubble (replaces the full-screen takeover) ---- */
+(function () {
+  const orig = window.showCodeScreen; let pop = null;
+  const copy = (v, msg) => { const fb = () => { const t = document.createElement('textarea'); t.value = v; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); if (window.__toast) window.__toast(msg); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(() => { if (window.__toast) window.__toast(msg); }, fb); else fb(); };
+  const close = () => { if (pop && performance.now() - (pop._t || 0) > 80) pop.hidden = true; };
+  window.showCodeScreen = function (code) {
+    if (!code) return;
+    let addr = ''; try { if (orig) { orig(code); const cs = document.getElementById('code-screen'); addr = (document.getElementById('cs-addr') || {}).textContent || ''; if (cs) cs.hidden = true; } } catch (_) {}
+    const anchor = document.querySelector('.cb-code'); if (!anchor) return;
+    if (!pop) {
+      pop = document.createElement('div'); pop.id = 'code-pop'; pop.hidden = true;
+      pop.innerHTML = '<div class="cp-t">Class code</div><div class="cp-c"></div><div class="cp-s">Students go to</div><div class="cp-a"></div><div class="cp-b"><button type="button" data-k="code">Copy code</button><button type="button" data-k="link">Copy link</button></div>';
+      document.body.appendChild(pop);
+      pop.addEventListener('click', (e) => { e.stopPropagation(); const b = e.target.closest('button'); if (!b) return; const c = pop.querySelector('.cp-c').textContent;
+        if (b.dataset.k === 'code') copy(c, 'Code copied'); else { const u = new URL(/^https?:$/.test(location.protocol) ? 'student' : 'student.html', location.href); u.search = ''; u.hash = ''; u.searchParams.set('code', c); copy(u.toString(), 'Link copied'); } });
+      document.addEventListener('click', close); document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    }
+    if (!pop.hidden && pop.querySelector('.cp-c').textContent === code) { pop.hidden = true; return; }
+    pop.querySelector('.cp-c').textContent = code; pop.querySelector('.cp-a').textContent = addr.replace(/^https?:\/\//, '');
+    pop._t = performance.now(); pop.hidden = false; const r = anchor.getBoundingClientRect(), w = pop.offsetWidth;
+    pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w + 14)) + 'px'; pop.style.top = (r.bottom + 12) + 'px';
+  };
+  /* the bubble's own click handlers call showCodeScreen via a click; stop that click closing the popout straight away */
+})();
+
+document.documentElement.classList.add('ll-ready');
 </script>
 </body>
 </html>

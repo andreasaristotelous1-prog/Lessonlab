@@ -41,7 +41,8 @@
       if (location.protocol !== 'file:') fetch('pdf.worker.min.js', { method: 'HEAD' }).then(function (r) { if (!r.ok) throw 0; }).catch(function () { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; });
     });
   </script>
-  <style>
+  <style id="ll-hold">html:not(.ll-ready) body{visibility:hidden !important}</style><script>setTimeout(function(){document.documentElement.classList.add('ll-ready')},4000)</script>
+<style>
     :root {
       --bg: rgb(28,30,34);
       --panel: rgb(20,20,20);
@@ -4652,6 +4653,29 @@ window.PV = function (o) {
       return btoa(bin);
     }
 
+
+    /* printed page numbers in the margins (bottom or top) are covered, so only the app's own page number shows */
+    async function llStripNums(bytes) {
+      try {
+        if (!window.PDFLib || !window.pdfjsLib) return bytes;
+        const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise, hits = {}; let pagesHit = 0;
+        const RE = /^(page\s*)?\d{1,3}(\s*(\/|of)\s*\d{1,3})?$|^[-–—]\s*\d{1,3}\s*[-–—]$/i;
+        for (let i = 1; i <= doc.numPages; i++) {
+          const pg = await doc.getPage(i); if (pg.rotate % 360) continue;
+          const v = pg.view, H = v[3] - v[1], tc = await pg.getTextContent();
+          for (const it of tc.items) {
+            const t = (it.str || '').trim(); if (!t || !RE.test(t)) continue;
+            const y = it.transform[5] - v[1]; if (!(y < H * 0.09 || y > H * 0.93)) continue;
+            const h = it.height || Math.abs(it.transform[3]) || 10;
+            if (!hits[i]) { hits[i] = []; pagesHit++; } hits[i].push({ x: it.transform[4], y: it.transform[5], w: it.width || h * t.length * 0.6, h });
+          }
+        }
+        if (!pagesHit || pagesHit < Math.min(2, doc.numPages) || pagesHit < Math.floor(doc.numPages * 0.3)) return bytes;
+        const pd = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true }), white = PDFLib.rgb(1, 1, 1);
+        Object.keys(hits).forEach((k) => { const page = pd.getPage(Number(k) - 1); hits[k].forEach((r) => page.drawRectangle({ x: r.x - 3, y: r.y - r.h * 0.3, width: r.w + 6, height: r.h * 1.35, color: white, borderWidth: 0 })); });
+        return await pd.save();
+      } catch (_) { return bytes; }
+    }
     const llUpload = async function (e) {
       const files = [...e.target.files];
       e.target.value = '';
@@ -4682,6 +4706,7 @@ window.PV = function (o) {
           displayName = images[0].name + (images.length > 1 ? ` +${images.length - 1} more` : '');
         }
       } catch (err) { return alert(err.message); }
+      if (!window.__reuseName) bytes = await llStripNums(bytes);
 
       // converting a labbook: pages with no red answer text are left out of the booklet
       if (labbook && !window.__reuseName && window.PDFLib) {
@@ -4743,7 +4768,7 @@ window.PV = function (o) {
       }
 
       try { if (window.__saveLast) await window.__saveLast(displayName, labbook, bytes, classCode); } catch (_) {}
-      try { if (window.LLLib) { const lm = await window.LLLib.save(base64String, { name: displayName, lab: labbook }); window.__libPub(lm.id, { name: lm.name, lab: !!lm.lab, ts: Date.now() }); window.dispatchEvent(new Event('ll-lib')); } } catch (_) {}
+      try { if (window.LLLib) { const lm = await window.LLLib.save(base64String, { name: displayName, lab: labbook, cls: classCode }); window.__libPub(lm.id, { name: lm.name, lab: !!lm.lab, ts: Date.now() }); window.dispatchEvent(new Event('ll-lib')); } } catch (_) {}
       let doc;
       try { doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise; }
       catch (_) { return alert("That file couldn't be opened as a PDF."); }
@@ -8693,6 +8718,22 @@ html body #login .login-card > *:not(.logo):not(h1):not(.back-link):not(#z):not(
 #old-bar { position: fixed; z-index: 70; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 999px; background: rgba(30,40,80,.94); color: #fff; font: 700 .85rem Quicksand, Arial, sans-serif; box-shadow: 0 8px 28px rgba(0,0,0,.3);}
 #old-bar[hidden] { display: none;}
 #old-bar button { border: 0; border-radius: 999px; padding: 7px 14px; background: #fff; color: #23336b; font: 700 .82rem Quicksand, Arial, sans-serif; cursor: pointer;}
+
+#pt-pop { --cell: clamp(30px, calc((100vw - 190px) / 19.4), 52px) !important;}
+.pt-c small { position: absolute; left: 4px; font: 800 calc(var(--cell) * .3)/1 Arial, sans-serif; opacity: .85;}
+.pt-c small.pm { top: 3px;} .pt-c small.pz { bottom: 3px; font-weight: 700; opacity: .75;}
+.pt-c b { font: 800 calc(var(--cell) * .42)/1 Arial, sans-serif; margin-left: calc(var(--cell) * .12);}
+.pt-big { position: relative;} .pt-big small { position: absolute; left: 8px; font: 800 calc(var(--cell) * .6)/1 Arial, sans-serif !important; opacity: .85 !important;}
+.pt-big small.pm { top: 7px;} .pt-big small.pz { bottom: 7px; font-weight: 700 !important; opacity: .75 !important;}
+.pt-big b { margin-left: calc(var(--cell) * .25);}
+#code-pop { position: fixed; z-index: 80; width: 250px; box-sizing: border-box; padding: 14px 16px 16px; border-radius: 20px; text-align: center; color: rgb(235,235,235); background: rgba(20,20,20,.55); backdrop-filter: blur(28px) saturate(2.2) brightness(1.08); -webkit-backdrop-filter: blur(28px) saturate(2.2) brightness(1.08); box-shadow: inset 0 0 0 1px rgba(235,235,235,.12), 0 14px 36px rgba(20,20,20,.45); font-family: Quicksand, Arial, sans-serif;}
+#code-pop[hidden] { display: none;}
+#code-pop .cp-t, #code-pop .cp-s { font-size: .72rem; font-weight: 700; letter-spacing: .04em; opacity: .65;}
+#code-pop .cp-c { margin: 4px 0 10px; font-size: 2.4rem; font-weight: 800; letter-spacing: .14em; padding-left: .14em; line-height: 1.1;}
+#code-pop .cp-a { margin: 2px 0 12px; font-size: .85rem; font-weight: 700; word-break: break-all; opacity: .9;}
+#code-pop .cp-b { display: flex; gap: 8px;}
+#code-pop .cp-b button { flex: 1; border: 0; border-radius: 12px; padding: 9px 6px; background: rgba(255,255,255,.14); color: inherit; font: 700 .8rem Quicksand, Arial, sans-serif; cursor: pointer;}
+#code-pop .cp-b button:hover { background: rgba(255,255,255,.24);}
 </style>
 <script>
 /* Section rail (mirrors the Swift app): a Classes / Booklets / Diagnostics switch, the mode switch, then a bottom section that changes with the switch.
@@ -8890,7 +8931,8 @@ html body #login .login-card > *:not(.logo):not(h1):not(.back-link):not(#z):not(
   const ptBox = el('div'), grid = el('div', 'pt-grid'), leg = el('div', 'pt-legend'); let sel = 6, filt = -1;
   const detail = el('div', 'pt-detail'); grid.appendChild(detail);
   const cells = {};
-  ELS.forEach((e) => { const b = el('button', 'pt-c'); b.type = 'button'; b.title = e.name; b.style.setProperty('--c', au2(CATS[e.cat][1])); b.style.setProperty('--cd', au2(CATS[e.cat][1], .25)); b.style.gridRow = e.row; b.style.gridColumn = e.col; b.innerHTML = '<small>' + e.n + '</small><b>' + e.sym + '</b>'; b.addEventListener('click', () => { sel = e.n; paintPT(); }); cells[e.n] = b; grid.appendChild(b); });
+  const gmc = (e) => e.n === 17 ? '35.5' : e.n === 29 ? '63.5' : String(Math.round(parseFloat(e.mass)));
+  ELS.forEach((e) => { const b = el('button', 'pt-c'); b.type = 'button'; b.title = e.name; b.style.setProperty('--c', au2(CATS[e.cat][1])); b.style.setProperty('--cd', au2(CATS[e.cat][1], .25)); b.style.gridRow = e.row; b.style.gridColumn = e.col; b.innerHTML = '<small class="pm">' + gmc(e) + '</small><b>' + e.sym + '</b><small class="pz">' + e.n + '</small>'; b.addEventListener('click', () => { sel = e.n; paintPT(); }); cells[e.n] = b; grid.appendChild(b); });
   const sp = el('div', 'pt-sp'); grid.appendChild(sp);
   CATS.forEach((c, i) => { const b = el('button'); b.type = 'button'; b.innerHTML = '<i style="background:' + au2(c[1]) + '"></i>' + c[0]; b.addEventListener('click', () => { filt = filt === i ? -1 : i; paintPT(); }); leg.appendChild(b); });
   /* GCSE style: whole-number masses (Cl 35.5, Cu 63.5); groups 1-7 and 0, none for the transition metals */
@@ -8898,7 +8940,7 @@ html body #login .login-card > *:not(.logo):not(h1):not(.back-link):not(#z):not(
   const gp = (e) => e.col <= 2 ? ' · Group ' + e.col : e.col >= 13 ? ' · Group ' + (e.col === 18 ? 0 : e.col - 10) : '';
   function paintPT() {
     const e = ELS[sel - 1], col = CATS[e.cat][1];
-    detail.innerHTML = '<div class="pt-big" style="background:' + au2(col) + '"><small>' + e.n + '</small><b>' + e.sym + '</b></div><div class="pt-info"><h4>' + e.name + '</h4><p>Relative atomic mass: ' + gm(e) + '</p><p>' + CATS[e.cat][0] + '</p><p>' + (e.row > 8 ? 'Period ' + (e.row === 9 ? 6 : 7) : 'Period ' + e.row + gp(e)) + '</p></div>';
+    detail.innerHTML = '<div class="pt-big" style="background:' + au2(col) + '"><small class="pm">' + gm(e) + '</small><b>' + e.sym + '</b><small class="pz">' + e.n + '</small></div><div class="pt-info"><h4>' + e.name + '</h4><p>Relative atomic mass: ' + gm(e) + '</p><p>' + CATS[e.cat][0] + '</p><p>' + (e.row > 8 ? 'Period ' + (e.row === 9 ? 6 : 7) : 'Period ' + e.row + gp(e)) + '</p></div>';
     ELS.forEach((x) => { cells[x.n].classList.toggle('sel', x.n === sel); cells[x.n].classList.toggle('dim', filt > -1 && x.cat !== filt); });
     [...leg.children].forEach((b, i) => b.classList.toggle('on', i === filt));
   }
@@ -9186,11 +9228,13 @@ window.LLLib = (function () {
     persist() { try { return navigator.storage && navigator.storage.persist ? navigator.storage.persist() : Promise.resolve(false); } catch (_) { return Promise.resolve(false); } },
     async save(b64, o) {
       o = o || {}; const id = fp(b64), old = await get(id).catch(() => null), now = Date.now();
-      const m = { id, name: (old && old.name) || o.name || 'Booklet', lab: old ? old.lab : !!o.lab, size: Math.round(b64.length * 0.75), added: old ? old.added : now, used: now };
+      const cls = ((old && old.classes) || []).slice(); if (o.cls && cls.indexOf(o.cls) < 0) cls.push(o.cls);
+      const m = { id, classes: cls, name: (old && old.name) || o.name || 'Booklet', lab: old ? old.lab : !!o.lab, size: Math.round(b64.length * 0.75), added: old ? old.added : now, used: now };
       await run(['meta', 'blob'], 'readwrite', (t) => { t.objectStore('meta').put(m); if (!old) t.objectStore('blob').put(b64, id); return null; });
       this.persist(); return m;
     },
-    async list() { const a = await run('meta', 'readonly', (t) => t.objectStore('meta').getAll()).catch(() => []); return (a || []).sort((x, y) => y.used - x.used); },
+    async list(cls) { const a = await run('meta', 'readonly', (t) => t.objectStore('meta').getAll()).catch(() => []); return (a || []).filter((m) => !cls || !m.classes || !m.classes.length || m.classes.indexOf(cls) > -1).sort((x, y) => y.used - x.used); },
+    async unlink(id, cls) { const m = await get(id); if (!m) return; const c = (m.classes || []).filter((x) => x !== cls); if (!cls || !m.classes || !m.classes.length || !c.length) return this.remove(id); m.classes = c; await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); },
     getB64(id) { return run('blob', 'readonly', (t) => t.objectStore('blob').get(id)); },
     async rename(id, name) { const m = await get(id); if (!m) return null; m.name = name; await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); return m; },
     async touch(id) { const m = await get(id); if (!m) return; m.used = Date.now(); await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); },
@@ -9210,7 +9254,7 @@ window.llLibFmt = (m) => { const d = new Date(m.used), mb = m.size / 1048576; re
   bb.after(lb);
   { const v = lb.querySelector('svg'); if (v) { v.style.setProperty('width', '26px', 'important'); v.style.setProperty('height', '26px', 'important'); } }
   const pop = document.createElement('div'); pop.className = 'rail-pop'; pop.id = 'lib-pop'; pop.hidden = true; pop.btn = lb;
-  pop.innerHTML = '<div class="rp-title">Your booklets</div><div class="lib-box"><div class="lib-list"></div><div class="lib-note">Kept in this browser with no expiry. Renaming or deleting here changes what students see in their list too.</div></div>';
+  pop.innerHTML = '<div class="rp-title">This class\u2019s booklets</div><div class="lib-box"><div class="lib-list"></div><div class="lib-note">Kept in this browser with no expiry. Each class has its own list. Renaming or deleting here changes what this class\u2019s students see too.</div></div>';
   document.body.appendChild(pop);
   const list = pop.querySelector('.lib-list');
   const I = { pen: '<svg viewBox="0 0 24 24"><path d="M4.5 19.5l.9-4.2L16.6 4.1a2 2 0 0 1 2.8 0l.5.5a2 2 0 0 1 0 2.8L8.7 18.6z"/></svg>', bin: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12M10.5 11v5M13.5 11v5"/></svg>' };
@@ -9218,7 +9262,7 @@ window.llLibFmt = (m) => { const d = new Date(m.used), mb = m.size / 1048576; re
   const code = () => { const e = document.getElementById('class-code'); return (e && e.textContent.trim()) || ''; };
   const cur = () => (window.__cur && window.__cur.id) || '';
   async function paint() {
-    const items = await window.LLLib.list(); list.innerHTML = '';
+    const items = await window.LLLib.list(code()); list.innerHTML = '';
     if (!items.length) { list.innerHTML = '<div class="lib-empty">No booklets yet. Upload one and it is kept here.</div>'; return; }
     items.forEach((m) => {
       const row = document.createElement('div'); row.className = 'lib-row';
@@ -9240,7 +9284,7 @@ window.llLibFmt = (m) => { const d = new Date(m.used), mb = m.size / 1048576; re
       const del = document.createElement('button'); del.type = 'button'; del.className = 'lib-act'; del.title = 'Delete'; del.innerHTML = I.bin;
       del.addEventListener('click', async () => {
         if (!del.dataset.sure) { del.dataset.sure = '1'; del.title = 'Click again to delete'; del.style.background = 'rgba(255,90,90,.45)'; setTimeout(() => { del.dataset.sure = ''; del.style.background = ''; del.title = 'Delete'; }, 2500); return; }
-        await window.LLLib.remove(m.id); if (window.__libPub) window.__libPub(m.id, null); paint();
+        await window.LLLib.unlink(m.id, code()); if (window.__libPub) window.__libPub(m.id, null); paint();
       });
       row.appendChild(o); row.appendChild(ed); row.appendChild(del); list.appendChild(row);
     });
@@ -9257,6 +9301,33 @@ window.llLibFmt = (m) => { const d = new Date(m.used), mb = m.size / 1048576; re
   window.addEventListener('ll-lib', () => { if (!pop.hidden) paint(); });
   window.LLLib.persist();
 })();
+
+/* ---- class code: a popout beside the code bubble (replaces the full-screen takeover) ---- */
+(function () {
+  const orig = window.showCodeScreen; let pop = null;
+  const copy = (v, msg) => { const fb = () => { const t = document.createElement('textarea'); t.value = v; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); if (window.__toast) window.__toast(msg); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(() => { if (window.__toast) window.__toast(msg); }, fb); else fb(); };
+  const close = () => { if (pop && performance.now() - (pop._t || 0) > 80) pop.hidden = true; };
+  window.showCodeScreen = function (code) {
+    if (!code) return;
+    let addr = ''; try { if (orig) { orig(code); const cs = document.getElementById('code-screen'); addr = (document.getElementById('cs-addr') || {}).textContent || ''; if (cs) cs.hidden = true; } } catch (_) {}
+    const anchor = document.querySelector('.cb-code'); if (!anchor) return;
+    if (!pop) {
+      pop = document.createElement('div'); pop.id = 'code-pop'; pop.hidden = true;
+      pop.innerHTML = '<div class="cp-t">Class code</div><div class="cp-c"></div><div class="cp-s">Students go to</div><div class="cp-a"></div><div class="cp-b"><button type="button" data-k="code">Copy code</button><button type="button" data-k="link">Copy link</button></div>';
+      document.body.appendChild(pop);
+      pop.addEventListener('click', (e) => { e.stopPropagation(); const b = e.target.closest('button'); if (!b) return; const c = pop.querySelector('.cp-c').textContent;
+        if (b.dataset.k === 'code') copy(c, 'Code copied'); else { const u = new URL(/^https?:$/.test(location.protocol) ? 'student' : 'student.html', location.href); u.search = ''; u.hash = ''; u.searchParams.set('code', c); copy(u.toString(), 'Link copied'); } });
+      document.addEventListener('click', close); document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    }
+    if (!pop.hidden && pop.querySelector('.cp-c').textContent === code) { pop.hidden = true; return; }
+    pop.querySelector('.cp-c').textContent = code; pop.querySelector('.cp-a').textContent = addr.replace(/^https?:\/\//, '');
+    pop._t = performance.now(); pop.hidden = false; const r = anchor.getBoundingClientRect(), w = pop.offsetWidth;
+    pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w + 14)) + 'px'; pop.style.top = (r.bottom + 12) + 'px';
+  };
+  /* the bubble's own click handlers call showCodeScreen via a click; stop that click closing the popout straight away */
+})();
+
+document.documentElement.classList.add('ll-ready');
 </script>
 </body>
 </html>
