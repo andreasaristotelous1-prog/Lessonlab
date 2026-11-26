@@ -1430,22 +1430,32 @@ window.PV = function (o) {
     S.q = S.q.then(async () => {
       if (gen !== S.gen || S.token.get(i) !== tok || !shown(i)) return;
       const page = await S.doc.getPage(i + 1);
-      let sc = want / S.sizes[i][0]; const px = S.sizes[i][0] * sc * S.sizes[i][1] * sc, cap = o.maxPixels || 22e6; if (px > cap) sc *= Math.sqrt(cap / px);
-      const vp = page.getViewport({ scale: sc }), off = document.createElement('canvas');
-      off.width = Math.floor(vp.width); off.height = Math.floor(vp.height);
-      await page.render({ canvasContext: off.getContext('2d'), viewport: vp }).promise;
+      let sc = want / S.sizes[i][0]; const px = S.sizes[i][0] * sc * S.sizes[i][1] * sc, cap = Math.min(o.maxPixels || 22e6, 14e6); if (px > cap) sc *= Math.sqrt(cap / px);
+      /* Some laptops can't allocate a big canvas (low memory / software graphics): the page then stayed blank, so zooming seemed to "skip" pages.
+         Try again smaller instead of giving up. */
+      let off = null, vp = null, done = false;
+      for (let tries = 0; tries < 3 && !done; tries++) {
+        try {
+          vp = page.getViewport({ scale: sc }); off = document.createElement('canvas');
+          off.width = Math.max(1, Math.floor(vp.width)); off.height = Math.max(1, Math.floor(vp.height));
+          const g = off.getContext('2d'); if (!g) throw new Error('canvas');
+          await page.render({ canvasContext: g, viewport: vp }).promise; done = true;
+        } catch (e) { if (off) { off.width = off.height = 0; off = null; } sc *= 0.65; if (gen !== S.gen || S.token.get(i) !== tok) return; }
+      }
+      if (!done) throw new Error('page ' + (i + 1));
       try { await window.__stripPageNums(page, vp, off); } catch (_) {}
-      if (gen !== S.gen || S.token.get(i) !== tok) return;
+      if (gen !== S.gen || S.token.get(i) !== tok) { off.width = off.height = 0; return; }
       cv.width = off.width; cv.height = off.height; cv.getContext('2d').drawImage(off, 0, 0);
+      off.width = off.height = 0;   /* hand the temporary canvas's memory back straight away */
       o.afterRender && o.afterRender(cv, i + 1, gen);
-    }).catch(() => { cv.dataset.k = ''; });
+    }).catch(() => { cv.dataset.k = ''; clearTimeout(S.retry); S.retry = setTimeout(render, 800); });   /* a page that failed is tried again shortly */
   }
   function evict(i) { const cv = S.els[i].firstChild; if (cv.dataset.k) { S.token.set(i, (S.token.get(i) || 0) + 1); cv.dataset.k = ''; cv.width = 1; cv.height = 1; } }
   function render() {
     const H = area.clientHeight;
     for (let i = 0; i < S.els.length; i++) {
       if (!shown(i)) continue; const t = top(i), h = S.els[i].offsetHeight;
-      if (t < H * 1.5 && t + h > -H * .5) draw(i); else if (t > H * 4 || t + h < -H * 3) evict(i);
+      if (t < H * 1.5 && t + h > -H * .5) draw(i); else if (t > H * 3 || t + h < -H * 2) evict(i);
     }
   }
   function goTo(n, quiet) {
@@ -1767,7 +1777,11 @@ window.PV = function (o) {
     const zNow = () => (zTgt != null ? zTgt : pv.zoom);
     window.zoomBy = (f) => setZoom(zNow() * f, null, null, true);
     window.resetZoom = () => { setZoom(1, null, null, true); scrollArea.scrollLeft = 0; };
-    scrollArea.addEventListener('wheel', (e) => { if (e.ctrlKey) { e.preventDefault(); setZoom(zNow() * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY, true); } }, { passive: false });
+    let zWheelAt = 0;
+    scrollArea.addEventListener('wheel', (e) => {
+      if (e.ctrlKey) { e.preventDefault(); zWheelAt = performance.now(); setZoom(zNow() * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY, true); }
+      else if (performance.now() - zWheelAt < 300) e.preventDefault();   /* a pinch on a touchpad also sends a little ordinary scrolling: ignore it while zooming, so the page doesn't drift */
+    }, { passive: false });
 
 
     /* Safari trackpad pinch (gesture events), booklet area only */
@@ -3255,6 +3269,10 @@ html body #s-code .cb-name:not(#z):not(#y), html body #s-code .cb-code:not(#z):n
 html body .s-main > .canvas-scroll-area:not(#z):not(#y) { padding-left: 104px !important; padding-right: 100px !important;}
 
 html body #rejoin-splash .rj-spin:not(#z) { border-top-color: rgb(255,127,192) !important;}
+
+@media (max-width: 640px) { html body #join .join-card:not(#z):not(#y) { width: calc(100vw - 40px) !important; max-width: 440px !important; min-height: 580px !important;} }
+
+.canvas-scroll-area, .s-main > .canvas-scroll-area, .pv-host, .pv-page { overflow-anchor: none !important;}
 </style>
 <script>
 (function () {
