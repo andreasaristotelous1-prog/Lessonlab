@@ -1550,7 +1550,7 @@ window.PV = function (o) {
   <div id="rejoin-splash">
     <div class="logo" aria-hidden="true">
       <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <g transform="scale(.6667)"><rect x="4" y="4" width="88" height="88" rx="22" fill="#7d68d0"/><g transform="translate(48 48) scale(2.3) translate(-73.5 -26.5)"><circle cx="70" cy="24" r="6" fill="#efebfc"/><circle cx="79" cy="38" r="4" fill="#efebfc"/><circle cx="76" cy="14" r="3" fill="#efebfc"/></g></g>
+      <g transform="scale(.6667)"><rect x="4" y="4" width="88" height="88" rx="22" fill="#ee5fa7"/><g transform="translate(48 48) scale(2.3) translate(-73.5 -26.5)"><circle cx="70" cy="24" r="6" fill="#efebfc"/><circle cx="79" cy="38" r="4" fill="#efebfc"/><circle cx="76" cy="14" r="3" fill="#efebfc"/></g></g>
     </svg>
     </div>
     <div class="rj-spin"></div>
@@ -1843,9 +1843,8 @@ window.PV = function (o) {
     // Sign out: tell the teacher this student has gone, forget the auto-join and go back to the start screen
     window.llSignOut = async function () {
       if (ended) return;
-      const ok = window.dgConfirm ? await window.dgConfirm('Sign out?', 'You will leave this class and can rejoin with the code.', 'Sign out', 'Stay') : true;
-      if (!ok) return;
-      try { if (studentRef) await update(studentRef, { status: 'offline' }); } catch (_) {}
+      /* no "are you sure?": tell the teacher (without waiting on the network), then leave straight away */
+      try { if (studentRef) update(studentRef, { status: 'offline' }).catch(() => {}); } catch (_) {}
       // A real sign-out: forget this device's saved name and class code entirely (not just the
       // auto-rejoin flag), so "Back to start" lands on a genuinely blank join form, and reopening
       // index.html doesn't skip straight back in either — both read this same saved info.
@@ -3254,6 +3253,8 @@ html body #code-screen .cs-code:not(#z):not(#y) { font-size: 2.6rem !important; 
 html body #s-code .cb-name:not(#z):not(#y), html body #s-code .cb-code:not(#z):not(#y) { position: relative !important; top: 1px !important; line-height: 1.25 !important; height: 25px !important; display: flex !important; align-items: center !important;}
 
 html body .s-main > .canvas-scroll-area:not(#z):not(#y) { padding-left: 104px !important; padding-right: 100px !important;}
+
+html body #rejoin-splash .rj-spin:not(#z) { border-top-color: rgb(255,127,192) !important;}
 </style>
 <script>
 (function () {

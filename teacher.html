@@ -16,13 +16,29 @@
   <meta name="apple-mobile-web-app-title" content="Lessonlab Teacher">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%270%200%2096%2096%27%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%3E%3Crect%20x%3D%274%27%20y%3D%274%27%20width%3D%2788%27%20height%3D%2788%27%20rx%3D%2722%27%20fill%3D%27%237d68d0%27%2F%3E%3Cg%20transform%3D%27translate%2848%2048%29%20scale%282.3%29%20translate%28-73.5%20-26.5%29%27%3E%3Ccircle%20cx%3D%2770%27%20cy%3D%2724%27%20r%3D%276%27%20fill%3D%27%23efebfc%27%2F%3E%3Ccircle%20cx%3D%2779%27%20cy%3D%2738%27%20r%3D%274%27%20fill%3D%27%23efebfc%27%2F%3E%3Ccircle%20cx%3D%2776%27%20cy%3D%2714%27%20r%3D%273%27%20fill%3D%27%23efebfc%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js">
   <script>
-    /* deferred scripts above finish before DOMContentLoaded, so pdfjsLib is guaranteed to exist here */
+    /* The PDF tools are served from this site (pdf.min.js, pdf.worker.min.js, pdf-lib.min.js, jspdf.umd.min.js, html2canvas.min.js next to teacher.html).
+       If one of those files is missing, the page falls back to the same version on the CDN, so nothing breaks. */
+    window.__llCDN = { pdfjs: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', pdflib: 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js' };
+    window.__llWorker = 'pdf.worker.min.js';
+    window.__llFallback = function (k) {
+      var s = document.createElement('script'); s.src = window.__llCDN[k];
+      if (k === 'pdfjs') { window.__llWorker = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; s.onload = function () { pdfjsLib.GlobalWorkerOptions.workerSrc = window.__llWorker; }; }
+      document.head.appendChild(s);
+    };
+  </script>
+  <script defer src="pdf.min.js" onerror="__llFallback('pdfjs')"></script>
+  <script defer src="pdf-lib.min.js" onerror="__llFallback('pdflib')"></script>
+  <script>
     document.addEventListener('DOMContentLoaded', function () {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      if (!window.pdfjsLib) return;   /* the CDN fallback sets the worker itself once it has loaded */
+      pdfjsLib.GlobalWorkerOptions.workerSrc = window.__llWorker;
+      /* pdf.min.js came from here but the worker file might not have been uploaded: check, and use the CDN worker if not */
+      if (location.protocol !== 'file:') fetch('pdf.worker.min.js', { method: 'HEAD' }).then(function (r) { if (!r.ok) throw 0; }).catch(function () { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; });
     });
   </script>
   <style>
@@ -6230,7 +6246,9 @@ further farther far distant distance`;
     }
     function dLoadScript(url, ok) {
       if (ok()) return Promise.resolve();
-      return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = url; sc.onload = res; sc.onerror = () => rej(new Error('Could not load the PDF tool. Check you are online.')); document.head.appendChild(sc); });
+      const tryUrl = (u) => new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = u; sc.onload = res; sc.onerror = () => rej(new Error('load')); document.head.appendChild(sc); });
+      /* the copy next to this page first, then the CDN */
+      return tryUrl(url.split('/').pop()).catch(() => tryUrl(url)).catch(() => { throw new Error('Could not load the PDF tool. Check you are online.'); });
     }
     // The PDF is the on-screen review itself (colours, switches, Checked / Adjusted labels), photographed page by page.
     async function dPdfReport(btn) {
@@ -8635,6 +8653,9 @@ html body #acct-badge #sound-btn:not(#z):not(#y) { margin: 0 auto !important; fl
 html body #timer-wrap #t-reset:not(#z):not(#y) { display: flex !important; align-items: center; justify-content: center;}
 html body #timer-wrap #t-reset:disabled:not(#z):not(#y) { opacity: .3 !important; cursor: default !important; pointer-events: none;}
 html body #timer-wrap #t-start[hidden]:not(#z):not(#y) { display: none !important;}
+
+html body #login .login-card:not(#z):not(#y) { background: rgb(28,52,80) !important; min-height: 530px !important; display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; justify-content: center !important; align-content: center !important; align-items: center !important;}
+html body #login .login-card > *:not(.logo):not(h1):not(.back-link):not(#z):not(#y) { flex: 0 0 100% !important; max-width: 100% !important;}
 </style>
 <script>
 /* Section rail (mirrors the Swift app): a Classes / Booklets / Diagnostics switch, the mode switch, then a bottom section that changes with the switch.
