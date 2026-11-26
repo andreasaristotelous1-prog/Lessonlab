@@ -2272,6 +2272,15 @@ window.PV = function (o) {
           }
         });
 
+        try { onValue(ref(db, `${base}/library`), (sn) => { window.__libCat = sn.val() || null; window.dispatchEvent(new Event('ll-lib')); }, () => { window.__libCat = null; }); } catch (_) {}
+        window.__libOpen = async (id, name) => {
+          const b64 = await window.LLLib.getB64(id); if (!b64) return; window.__libViewing = id; window.LLLib.touch(id).catch(() => {});
+          const nb = document.getElementById('old-bar'); nb.querySelector('span').textContent = 'Old booklet: ' + (name || 'Booklet'); nb.hidden = false; loadBase64PDF(b64); window.dispatchEvent(new Event('ll-lib'));
+        };
+        window.__libBack = () => {
+          if (!window.__libViewing) return; window.__libViewing = ''; const nb = document.getElementById('old-bar'); if (nb) nb.hidden = true; window.dispatchEvent(new Event('ll-lib'));
+          if (window.__classB64) loadBase64PDF(window.__classB64); else get(pdfRef).then((sn) => { const v = sn.val(); if (v) loadBase64PDF(v); }).catch(() => {});
+        };
         // Listen for Streamed PDF from Teacher
         const pdfRef = ref(db, `${base}/session/activePdfData`);
         onValue(pdfRef, (snap) => {
@@ -2279,7 +2288,10 @@ window.PV = function (o) {
           if (base64Data) {
             const key = base64Data.length + ':' + base64Data.slice(0, 64) + base64Data.slice(-64);
             if (key === lastPdfKey && pdfDoc) return;   // same booklet re-sent: keep the student's place
-            lastPdfKey = key; loadBase64PDF(base64Data);
+            lastPdfKey = key; window.__classB64 = base64Data; window.__classId = window.LLLib ? window.LLLib.fp(base64Data) : '';
+            setTimeout(async () => { try { let n = 'Booklet'; try { n = (await get(ref(db, `${base}/session/fileName`))).val() || n; } catch (_) {} if (window.LLLib && window.__classB64 === base64Data) { await window.LLLib.save(base64Data, { name: n }); window.dispatchEvent(new Event('ll-lib')); } } catch (_) {} }, 1500);
+            if (window.__libViewing) { const nb = document.getElementById('old-bar'); if (nb) { nb.querySelector('span').textContent = 'New booklet from your teacher'; nb.hidden = false; } return; }
+            loadBase64PDF(base64Data);
           }
         }, (err) => { waitingMsg.style.display = ''; waitingMsg.textContent = 'Couldn\u2019t reach the class (' + err.message + ')'; });
         /* watchdog: if the booklet still hasn't opened (slow school Wi-Fi, a connection that dropped, a missed update), ask again */
@@ -3273,6 +3285,25 @@ html body #rejoin-splash .rj-spin:not(#z) { border-top-color: rgb(255,127,192) !
 @media (max-width: 640px) { html body #join .join-card:not(#z):not(#y) { width: calc(100vw - 40px) !important; max-width: 440px !important; min-height: 580px !important;} }
 
 .canvas-scroll-area, .s-main > .canvas-scroll-area, .pv-host, .pv-page { overflow-anchor: none !important;}
+.lib-box { width: 276px; max-width: 80vw;}
+.lib-list { max-height: min(56vh, 420px); overflow: auto; margin: 0 -4px; padding: 0 4px;}
+.lib-row { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; padding: 4px; border-radius: 14px; background: rgba(255,255,255,.07);}
+.lib-row.cur { box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);}
+.lib-open { flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; color: inherit; font: 700 .85rem Quicksand, Arial, sans-serif; padding: 6px 8px; border-radius: 10px; cursor: pointer;}
+.lib-open:hover { background: rgba(255,255,255,.1);}
+.lib-open b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.lib-open small { display: block; font-size: .7rem; font-weight: 600; opacity: .7; margin-top: 2px;}
+.lib-open em { font-style: normal; font-size: .62rem; margin-left: 6px; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,.2); vertical-align: 1px;}
+.lib-act { flex: none; width: 30px; height: 30px; border: 0; border-radius: 10px; background: transparent; color: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: .8;}
+.lib-act:hover { background: rgba(255,255,255,.14); opacity: 1;}
+.lib-act svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;}
+.lib-edit { flex: 1; min-width: 0; font: 700 .85rem Quicksand, Arial, sans-serif; padding: 7px 9px; border-radius: 10px; border: 2px solid rgba(255,255,255,.5); background: rgba(0,0,0,.25); color: inherit; outline: 0;}
+.lib-empty { padding: 14px 8px; font-size: .82rem; opacity: .75; text-align: center;}
+.lib-note { margin: 8px 2px 0; font-size: .68rem; opacity: .6; line-height: 1.35;}
+#old-bar { position: fixed; z-index: 70; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 999px; background: rgba(30,40,80,.94); color: #fff; font: 700 .85rem Quicksand, Arial, sans-serif; box-shadow: 0 8px 28px rgba(0,0,0,.3);}
+#old-bar[hidden] { display: none;}
+#old-bar button { border: 0; border-radius: 999px; padding: 7px 14px; background: #fff; color: #23336b; font: 700 .82rem Quicksand, Arial, sans-serif; cursor: pointer;}
+#lib-pop.rail-pop { position: fixed !important; z-index: 60;}
 </style>
 <script>
 (function () {
@@ -3327,7 +3358,7 @@ html body #rejoin-splash .rj-spin:not(#z) { border-top-color: rgb(255,127,192) !
   const bPt = rb('pt-btn', 'Periodic table', '<svg class="pt" viewBox="0 0 24 24" aria-hidden="true" style="stroke:none"><rect x="1.5" y="1.5" width="21" height="21" rx="5" style="fill:none;stroke:currentColor;stroke-width:2"/><text x="12" y="17.2" text-anchor="middle" font-weight="800" font-size="15" style="fill:currentColor;stroke:none">P</text></svg>');
   const bCalc = rb('calc-btn', 'Calculator', '<svg class="cal" viewBox="0 0 22 27" aria-hidden="true" style="stroke:none"><rect x="1" y="1" width="20" height="25" rx="5" style="fill:none;stroke:currentColor;stroke-width:2"/><rect x="6" y="6" width="10" height="4" rx="1.5" style="fill:currentColor;stroke:none"/><rect x="6" y="14" width="4.5" height="4.5" rx="1.2" style="fill:currentColor;stroke:none"/><rect x="11.5" y="14" width="4.5" height="4.5" rx="1.2" style="fill:currentColor;stroke:none"/><rect x="6" y="20.5" width="4.5" height="4.5" rx="1.2" style="fill:currentColor;stroke:none"/><rect x="11.5" y="20.5" width="4.5" height="4.5" rx="1.2" style="fill:currentColor;stroke:none"/></svg>');
   const bTime = rb('tm-btn', 'Timer', svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'));
-  const bFold = rb('sr-folder', 'Booklets folder', svg('<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2.2h8A1.5 1.5 0 0 1 20.5 9.7V17a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17z"/>'), soon);
+  const bFold = rb('sr-folder', 'Booklets folder', svg('<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2.2h8A1.5 1.5 0 0 1 20.5 9.7V17a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17z"/>'));
   [bFold, bPt, bCalc].forEach((b) => pB.appendChild(b));
   /* the timer lives in the static area, under the Playing / Paused / Marking toggle */
   const tmGrp = el('div', '', 'sec-timer'); tmGrp.hidden = true; bTime.tabIndex = -1; bTime.setAttribute('aria-disabled', 'true'); tmGrp.appendChild(bTime); rail.insertBefore(tmGrp, adapt);
@@ -3418,8 +3449,28 @@ html body #rejoin-splash .rj-spin:not(#z) { border-top-color: rgb(255,127,192) !
   document.addEventListener('click', () => closeMine());
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMine(); });
   /* opening any other rail button closes ours */
-  rail.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && ['pt-btn', 'calc-btn', 'tm-btn'].indexOf(b.id) < 0) closeMine(); }, true);
+  rail.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && ['pt-btn', 'calc-btn', 'tm-btn', 'sr-folder'].indexOf(b.id) < 0) closeMine(); }, true);
 
+  /* ---- old booklets (kept in this browser, no expiry; the teacher controls the list) ---- */
+  (function () {
+    const box = el('div', 'lib-box'); box.innerHTML = '<div class="rp-title">Booklets</div><div class="lib-list"></div><div class="lib-note">Kept on this device. Your teacher decides which old booklets are listed.</div>';
+    const list = box.querySelector('.lib-list');
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const paint = async () => {
+      if (!window.LLLib) return; let items = await window.LLLib.list(); const cat = window.__libCat, cid = window.__classId || '', vid = window.__libViewing || '';
+      if (cat) items = items.filter((m) => cat[m.id] || m.id === cid).map((m) => cat[m.id] && cat[m.id].name ? Object.assign({}, m, { name: cat[m.id].name }) : m);
+      list.innerHTML = '';
+      if (!items.length) { list.innerHTML = '<div class="lib-empty">Booklets from your class will be kept here.</div>'; return; }
+      items.forEach((m) => {
+        const row = el('div', 'lib-row' + ((vid ? m.id === vid : m.id === cid) ? ' cur' : '')), o = el('button', 'lib-open'); o.type = 'button';
+        o.innerHTML = '<b>' + esc(m.name) + (m.id === cid ? '<em>Class</em>' : '') + '</b><small>' + esc(window.llLibFmt(m)) + '</small>';
+        o.addEventListener('click', () => { closeMine(); if (m.id === cid) window.__libBack && window.__libBack(); else window.__libOpen && window.__libOpen(m.id, m.name); });
+        row.appendChild(o); list.appendChild(row);
+      });
+    };
+    const pop = makePop('lib-pop', bFold, box, paint);
+    window.addEventListener('ll-lib', () => { if (!pop.hidden) paint(); });
+  })();
   const PT_RAW = 'H|Hydrogen|1.008;He|Helium|4.0026;Li|Lithium|6.94;Be|Beryllium|9.0122;B|Boron|10.81;C|Carbon|12.011;N|Nitrogen|14.007;O|Oxygen|15.999;F|Fluorine|18.998;Ne|Neon|20.180;Na|Sodium|22.990;Mg|Magnesium|24.305;Al|Aluminium|26.982;Si|Silicon|28.085;P|Phosphorus|30.974;S|Sulfur|32.06;Cl|Chlorine|35.45;Ar|Argon|39.948;K|Potassium|39.098;Ca|Calcium|40.078;Sc|Scandium|44.956;Ti|Titanium|47.867;V|Vanadium|50.942;Cr|Chromium|51.996;Mn|Manganese|54.938;Fe|Iron|55.845;Co|Cobalt|58.933;Ni|Nickel|58.693;Cu|Copper|63.546;Zn|Zinc|65.38;Ga|Gallium|69.723;Ge|Germanium|72.630;As|Arsenic|74.922;Se|Selenium|78.971;Br|Bromine|79.904;Kr|Krypton|83.798;Rb|Rubidium|85.468;Sr|Strontium|87.62;Y|Yttrium|88.906;Zr|Zirconium|91.224;Nb|Niobium|92.906;Mo|Molybdenum|95.95;Tc|Technetium|98;Ru|Ruthenium|101.07;Rh|Rhodium|102.91;Pd|Palladium|106.42;Ag|Silver|107.87;Cd|Cadmium|112.41;In|Indium|114.82;Sn|Tin|118.71;Sb|Antimony|121.76;Te|Tellurium|127.60;I|Iodine|126.90;Xe|Xenon|131.29;Cs|Caesium|132.91;Ba|Barium|137.33;La|Lanthanum|138.91;Ce|Cerium|140.12;Pr|Praseodymium|140.91;Nd|Neodymium|144.24;Pm|Promethium|145;Sm|Samarium|150.36;Eu|Europium|151.96;Gd|Gadolinium|157.25;Tb|Terbium|158.93;Dy|Dysprosium|162.50;Ho|Holmium|164.93;Er|Erbium|167.26;Tm|Thulium|168.93;Yb|Ytterbium|173.05;Lu|Lutetium|174.97;Hf|Hafnium|178.49;Ta|Tantalum|180.95;W|Tungsten|183.84;Re|Rhenium|186.21;Os|Osmium|190.23;Ir|Iridium|192.22;Pt|Platinum|195.08;Au|Gold|196.97;Hg|Mercury|200.59;Tl|Thallium|204.38;Pb|Lead|207.2;Bi|Bismuth|208.98;Po|Polonium|209;At|Astatine|210;Rn|Radon|222;Fr|Francium|223;Ra|Radium|226;Ac|Actinium|227;Th|Thorium|232.04;Pa|Protactinium|231.04;U|Uranium|238.03;Np|Neptunium|237;Pu|Plutonium|244;Am|Americium|243;Cm|Curium|247;Bk|Berkelium|247;Cf|Californium|251;Es|Einsteinium|252;Fm|Fermium|257;Md|Mendelevium|258;No|Nobelium|259;Lr|Lawrencium|266;Rf|Rutherfordium|267;Db|Dubnium|268;Sg|Seaborgium|269;Bh|Bohrium|270;Hs|Hassium|277;Mt|Meitnerium|278;Ds|Darmstadtium|281;Rg|Roentgenium|282;Cn|Copernicium|285;Nh|Nihonium|286;Fl|Flerovium|289;Mc|Moscovium|290;Lv|Livermorium|293;Ts|Tennessine|294;Og|Oganesson|294';
   const CATS = [['Alkali metal', '#FF9AA2'], ['Alkaline earth', '#FFC48C'], ['Transition metal', '#FFE08A'], ['Post-transition metal', '#B5E6A2'], ['Metalloid', '#8FE3C8'], ['Nonmetal', '#8CCBFF'], ['Halogen', '#A9B4FF'], ['Noble gas', '#D0A8FF'], ['Lanthanide', '#FFA8DC'], ['Actinide', '#E6A6C2']];
   const catOf = (n) => { const I = (a) => a.indexOf(n) > -1;
@@ -3605,6 +3656,40 @@ window.__stripPageNums = async function (page, vp, cv) {
     g.fillStyle = c; g.fillRect(e - 3, f - h * 1.05, w + 6, h * 1.4);
   });
 };
+
+/* ---- Booklet library: every booklet kept in this browser (IndexedDB), no expiry ---- */
+window.LLLib = (function () {
+  let P = null;
+  const open = () => P || (P = new Promise((res, rej) => { const r = indexedDB.open('lessonlab-library', 1); r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('meta', { keyPath: 'id' }); d.createObjectStore('blob'); }; r.onsuccess = () => res(r.result); r.onerror = () => { P = null; rej(r.error); }; }));
+  const run = (stores, mode, fn) => open().then((d) => new Promise((res, rej) => { const t = d.transaction(stores, mode); let out; t.oncomplete = () => res(out && 'result' in out ? out.result : out); t.onerror = t.onabort = () => rej(t.error); out = fn(t); }));
+  const fp = (s) => { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return ((h2 >>> 0).toString(36) + (h1 >>> 0).toString(36) + s.length.toString(36)); };
+  const get = (id) => run('meta', 'readonly', (t) => t.objectStore('meta').get(id));
+  return {
+    fp,
+    persist() { try { return navigator.storage && navigator.storage.persist ? navigator.storage.persist() : Promise.resolve(false); } catch (_) { return Promise.resolve(false); } },
+    async save(b64, o) {
+      o = o || {}; const id = fp(b64), old = await get(id).catch(() => null), now = Date.now();
+      const m = { id, name: (old && old.name) || o.name || 'Booklet', lab: old ? old.lab : !!o.lab, size: Math.round(b64.length * 0.75), added: old ? old.added : now, used: now };
+      await run(['meta', 'blob'], 'readwrite', (t) => { t.objectStore('meta').put(m); if (!old) t.objectStore('blob').put(b64, id); return null; });
+      this.persist(); return m;
+    },
+    async list() { const a = await run('meta', 'readonly', (t) => t.objectStore('meta').getAll()).catch(() => []); return (a || []).sort((x, y) => y.used - x.used); },
+    getB64(id) { return run('blob', 'readonly', (t) => t.objectStore('blob').get(id)); },
+    async rename(id, name) { const m = await get(id); if (!m) return null; m.name = name; await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); return m; },
+    async touch(id) { const m = await get(id); if (!m) return; m.used = Date.now(); await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); },
+    remove(id) { return run(['meta', 'blob'], 'readwrite', (t) => { t.objectStore('meta').delete(id); t.objectStore('blob').delete(id); return null; }); },
+    async usage() { try { const e = await navigator.storage.estimate(); return e; } catch (_) { return null; } }
+  };
+})();
+window.llLibFmt = (m) => { const d = new Date(m.used), mb = m.size / 1048576; return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' + (mb >= 1 ? mb.toFixed(1) + ' MB' : Math.max(1, Math.round(m.size / 1024)) + ' KB'); };
+
+(function () {
+  if (document.getElementById('old-bar')) return;
+  const b = document.createElement('div'); b.id = 'old-bar'; b.hidden = true; b.innerHTML = '<span></span><button type="button">Back to class booklet</button>';
+  b.querySelector('button').addEventListener('click', () => { if (window.__libBack) window.__libBack(); b.hidden = true; });
+  document.body.appendChild(b);
+  if (window.LLLib) window.LLLib.persist();
+})();
 </script>
 </body>
 </html>

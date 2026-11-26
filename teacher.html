@@ -3993,6 +3993,7 @@ window.PV = function (o) {
 
     const currentClass = () => classes.find((c) => c.code === classCode) || null;
     const cp = (path) => ref(db, `classes/${classCode}/${path}`);
+    window.__libPub = (id, v) => { try { return set(cp('library/' + id), v).catch(() => {}); } catch (_) {} };
     const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
 
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4742,6 +4743,7 @@ window.PV = function (o) {
       }
 
       try { if (window.__saveLast) await window.__saveLast(displayName, labbook, bytes, classCode); } catch (_) {}
+      try { if (window.LLLib) { const lm = await window.LLLib.save(base64String, { name: displayName, lab: labbook }); window.__libPub(lm.id, { name: lm.name, lab: !!lm.lab, ts: Date.now() }); window.dispatchEvent(new Event('ll-lib')); } } catch (_) {}
       let doc;
       try { doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise; }
       catch (_) { return alert("That file couldn't be opened as a PDF."); }
@@ -8673,6 +8675,24 @@ html body #login .login-card > *:not(.logo):not(h1):not(.back-link):not(#z):not(
 @media (max-width: 640px) { html body #login .login-card:not(#z):not(#y) { width: calc(100vw - 40px) !important; max-width: 440px !important; min-height: 580px !important;} }
 
 #canvas-container, .pv-host, .pv-page { overflow-anchor: none !important;}
+.lib-box { width: 276px; max-width: 80vw;}
+.lib-list { max-height: min(56vh, 420px); overflow: auto; margin: 0 -4px; padding: 0 4px;}
+.lib-row { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; padding: 4px; border-radius: 14px; background: rgba(255,255,255,.07);}
+.lib-row.cur { box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);}
+.lib-open { flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; color: inherit; font: 700 .85rem Quicksand, Arial, sans-serif; padding: 6px 8px; border-radius: 10px; cursor: pointer;}
+.lib-open:hover { background: rgba(255,255,255,.1);}
+.lib-open b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.lib-open small { display: block; font-size: .7rem; font-weight: 600; opacity: .7; margin-top: 2px;}
+.lib-open em { font-style: normal; font-size: .62rem; margin-left: 6px; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,.2); vertical-align: 1px;}
+.lib-act { flex: none; width: 30px; height: 30px; border: 0; border-radius: 10px; background: transparent; color: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: .8;}
+.lib-act:hover { background: rgba(255,255,255,.14); opacity: 1;}
+.lib-act svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;}
+.lib-edit { flex: 1; min-width: 0; font: 700 .85rem Quicksand, Arial, sans-serif; padding: 7px 9px; border-radius: 10px; border: 2px solid rgba(255,255,255,.5); background: rgba(0,0,0,.25); color: inherit; outline: 0;}
+.lib-empty { padding: 14px 8px; font-size: .82rem; opacity: .75; text-align: center;}
+.lib-note { margin: 8px 2px 0; font-size: .68rem; opacity: .6; line-height: 1.35;}
+#old-bar { position: fixed; z-index: 70; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 999px; background: rgba(30,40,80,.94); color: #fff; font: 700 .85rem Quicksand, Arial, sans-serif; box-shadow: 0 8px 28px rgba(0,0,0,.3);}
+#old-bar[hidden] { display: none;}
+#old-bar button { border: 0; border-radius: 999px; padding: 7px 14px; background: #fff; color: #23336b; font: 700 .82rem Quicksand, Arial, sans-serif; cursor: pointer;}
 </style>
 <script>
 /* Section rail (mirrors the Swift app): a Classes / Booklets / Diagnostics switch, the mode switch, then a bottom section that changes with the switch.
@@ -9152,6 +9172,90 @@ window.__stripPageNums = async function (page, vp, cv) {
   const big = document.createElement('div'); big.id = 't-big'; big.hidden = true; host.insertBefore(big, host.firstChild);
   const sync = () => { big.hidden = clk.hidden || clk.classList.contains('done'); big.textContent = clk.textContent; };
   const mo = new MutationObserver(sync); mo.observe(clk, { attributes: true, attributeFilter: ['hidden', 'class'], childList: true, characterData: true, subtree: true }); sync();
+})();
+
+/* ---- Booklet library: every booklet kept in this browser (IndexedDB), no expiry ---- */
+window.LLLib = (function () {
+  let P = null;
+  const open = () => P || (P = new Promise((res, rej) => { const r = indexedDB.open('lessonlab-library', 1); r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('meta', { keyPath: 'id' }); d.createObjectStore('blob'); }; r.onsuccess = () => res(r.result); r.onerror = () => { P = null; rej(r.error); }; }));
+  const run = (stores, mode, fn) => open().then((d) => new Promise((res, rej) => { const t = d.transaction(stores, mode); let out; t.oncomplete = () => res(out && 'result' in out ? out.result : out); t.onerror = t.onabort = () => rej(t.error); out = fn(t); }));
+  const fp = (s) => { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return ((h2 >>> 0).toString(36) + (h1 >>> 0).toString(36) + s.length.toString(36)); };
+  const get = (id) => run('meta', 'readonly', (t) => t.objectStore('meta').get(id));
+  return {
+    fp,
+    persist() { try { return navigator.storage && navigator.storage.persist ? navigator.storage.persist() : Promise.resolve(false); } catch (_) { return Promise.resolve(false); } },
+    async save(b64, o) {
+      o = o || {}; const id = fp(b64), old = await get(id).catch(() => null), now = Date.now();
+      const m = { id, name: (old && old.name) || o.name || 'Booklet', lab: old ? old.lab : !!o.lab, size: Math.round(b64.length * 0.75), added: old ? old.added : now, used: now };
+      await run(['meta', 'blob'], 'readwrite', (t) => { t.objectStore('meta').put(m); if (!old) t.objectStore('blob').put(b64, id); return null; });
+      this.persist(); return m;
+    },
+    async list() { const a = await run('meta', 'readonly', (t) => t.objectStore('meta').getAll()).catch(() => []); return (a || []).sort((x, y) => y.used - x.used); },
+    getB64(id) { return run('blob', 'readonly', (t) => t.objectStore('blob').get(id)); },
+    async rename(id, name) { const m = await get(id); if (!m) return null; m.name = name; await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); return m; },
+    async touch(id) { const m = await get(id); if (!m) return; m.used = Date.now(); await run('meta', 'readwrite', (t) => { t.objectStore('meta').put(m); return null; }); },
+    remove(id) { return run(['meta', 'blob'], 'readwrite', (t) => { t.objectStore('meta').delete(id); t.objectStore('blob').delete(id); return null; }); },
+    async usage() { try { const e = await navigator.storage.estimate(); return e; } catch (_) { return null; } }
+  };
+})();
+window.llLibFmt = (m) => { const d = new Date(m.used), mb = m.size / 1048576; return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' + (mb >= 1 ? mb.toFixed(1) + ' MB' : Math.max(1, Math.round(m.size / 1024)) + ' KB'); };
+
+/* ---- Booklets: upload icon + folder of every booklet kept in this browser (teacher can open / rename / delete) ---- */
+(function () {
+  const bb = document.getElementById('book-btn'); if (!bb || document.getElementById('lib-btn')) return;
+  const UP = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round"><path d="M12 19.5v-10M7.5 13.5L12 9l4.5 4.5M5 4.5h14"/></svg>';
+  const ico = bb.querySelector('svg'); const t = document.createElement('div'); t.innerHTML = UP; if (ico) ico.replaceWith(t.firstChild); else bb.insertBefore(t.firstChild, bb.firstChild);
+  const lb = document.createElement('button'); lb.type = 'button'; lb.className = 'btn'; lb.id = 'lib-btn'; lb.title = 'Old booklets'; lb.setAttribute('aria-label', 'Old booklets');
+  lb.innerHTML = (window.LL_SF && window.LL_SF['folder.fill']) || '<svg class="ic" viewBox="0 0 24 24"><path d="M3 8c0-1.3 1-2.3 2.3-2.3h3.5l2.6 1.7h7.3c1.3 0 2.3 1 2.3 2.3v7.6c0 1.3-1 2.3-2.3 2.3H5.3C4 19.6 3 18.6 3 17.3z" fill="currentColor"/></svg>';
+  bb.after(lb);
+  { const v = lb.querySelector('svg'); if (v) { v.style.setProperty('width', '26px', 'important'); v.style.setProperty('height', '26px', 'important'); } }
+  const pop = document.createElement('div'); pop.className = 'rail-pop'; pop.id = 'lib-pop'; pop.hidden = true; pop.btn = lb;
+  pop.innerHTML = '<div class="rp-title">Your booklets</div><div class="lib-box"><div class="lib-list"></div><div class="lib-note">Kept in this browser with no expiry. Renaming or deleting here changes what students see in their list too.</div></div>';
+  document.body.appendChild(pop);
+  const list = pop.querySelector('.lib-list');
+  const I = { pen: '<svg viewBox="0 0 24 24"><path d="M4.5 19.5l.9-4.2L16.6 4.1a2 2 0 0 1 2.8 0l.5.5a2 2 0 0 1 0 2.8L8.7 18.6z"/></svg>', bin: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12M10.5 11v5M13.5 11v5"/></svg>' };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const code = () => { const e = document.getElementById('class-code'); return (e && e.textContent.trim()) || ''; };
+  const cur = () => (window.__cur && window.__cur.id) || '';
+  async function paint() {
+    const items = await window.LLLib.list(); list.innerHTML = '';
+    if (!items.length) { list.innerHTML = '<div class="lib-empty">No booklets yet. Upload one and it is kept here.</div>'; return; }
+    items.forEach((m) => {
+      const row = document.createElement('div'); row.className = 'lib-row';
+      const o = document.createElement('button'); o.type = 'button'; o.className = 'lib-open'; o.title = 'Send this booklet to the class';
+      o.innerHTML = '<b>' + esc(m.name) + (m.lab ? '<em>Converted</em>' : '') + '</b><small>' + esc(window.llLibFmt(m)) + '</small>';
+      o.addEventListener('click', async () => {
+        const b64 = await window.LLLib.getB64(m.id); if (!b64) return; closePop();
+        const raw = atob(b64), u = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i);
+        const f = new File([u], /\.pdf$/i.test(m.name) ? m.name : 'booklet.pdf', { type: 'application/pdf' });
+        const dt = new DataTransfer(); dt.items.add(f); const a = document.getElementById('pdf-upload');
+        window.__lbNext = !!m.lab; window.__reuseName = m.name; a.files = dt.files; a.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      const ed = document.createElement('button'); ed.type = 'button'; ed.className = 'lib-act'; ed.title = 'Rename'; ed.innerHTML = I.pen;
+      ed.addEventListener('click', () => {
+        const inp = document.createElement('input'); inp.className = 'lib-edit'; inp.value = m.name; inp.maxLength = 100; row.replaceChild(inp, o); inp.focus(); inp.select();
+        let done = false; const fin = async (save) => { if (done) return; done = true; const v = inp.value.trim(); if (save && v && v !== m.name) { await window.LLLib.rename(m.id, v); if (window.__libPub) window.__libPub(m.id, { name: v, lab: !!m.lab, ts: Date.now() }); } paint(); };
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') fin(true); else if (e.key === 'Escape') fin(false); }); inp.addEventListener('blur', () => fin(true));
+      });
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'lib-act'; del.title = 'Delete'; del.innerHTML = I.bin;
+      del.addEventListener('click', async () => {
+        if (!del.dataset.sure) { del.dataset.sure = '1'; del.title = 'Click again to delete'; del.style.background = 'rgba(255,90,90,.45)'; setTimeout(() => { del.dataset.sure = ''; del.style.background = ''; del.title = 'Delete'; }, 2500); return; }
+        await window.LLLib.remove(m.id); if (window.__libPub) window.__libPub(m.id, null); paint();
+      });
+      row.appendChild(o); row.appendChild(ed); row.appendChild(del); list.appendChild(row);
+    });
+  }
+  const place = () => { const q = lb.getBoundingClientRect(); pop.style.left = (((lb.closest('.tabs, .s-rail') || lb).getBoundingClientRect().right) + 16) + 'px'; pop.style.top = Math.max(8, Math.min(q.top, innerHeight - pop.offsetHeight - 8)) + 'px'; };
+  const closePop = () => { pop.hidden = true; lb.classList.remove('open'); };
+  lb.addEventListener('click', async (e) => {
+    e.stopPropagation(); if (!pop.hidden) { closePop(); return; }
+    document.dispatchEvent(new Event('click'));
+    await paint(); pop.hidden = false; lb.classList.add('open'); place();
+  });
+  pop.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', closePop); document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePop(); });
+  window.addEventListener('ll-lib', () => { if (!pop.hidden) paint(); });
+  window.LLLib.persist();
 })();
 </script>
 </body>
